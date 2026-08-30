@@ -1,129 +1,182 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Copiloto de Rotas</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <title>Copiloto de Rotas</title>
 
-<style>
-body{
-    margin:0;
-    font-family:Arial,sans-serif;
-    background:#0b1220;
-    color:white
-}
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  >
 
-.container{
-    max-width:700px;
-    margin:auto;
-    padding:16px
-}
+  <style>
+    * {
+      box-sizing: border-box;
+    }
 
-h1{
-    margin-bottom:5px
-}
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #0b1220;
+      color: white;
+    }
 
-.status{
-    color:#4ade80;
-    margin-bottom:15px
-}
+    .container {
+      max-width: 700px;
+      margin: auto;
+      padding: 16px;
+    }
 
-input,button{
-    width:100%;
-    padding:15px;
-    margin-top:10px;
-    border-radius:12px;
-    border:none;
-    box-sizing:border-box;
-    font-size:16px
-}
+    h1 {
+      margin: 0 0 5px;
+      font-size: 34px;
+    }
 
-input{
-    background:#182337;
-    color:white
-}
+    .status {
+      color: #4ade80;
+      font-size: 18px;
+      margin-bottom: 18px;
+    }
 
-button{
-    background:#2563eb;
-    color:white;
-    font-weight:bold
-}
+    input,
+    button {
+      width: 100%;
+      border-radius: 14px;
+      padding: 16px;
+      font-size: 18px;
+      margin-top: 10px;
+    }
 
-#map{
-    height:330px;
-    margin-top:15px;
-    border-radius:20px;
-    overflow:hidden
-}
+    input {
+      background: #182337;
+      color: white;
+      border: 2px solid #334155;
+    }
 
-.card{
-    background:#182337;
-    padding:15px;
-    border-radius:15px;
-    margin-top:12px
-}
+    button {
+      border: none;
+      background: #2563eb;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
 
-.opcao{
-    background:#111a2b;
-    padding:12px;
-    border-radius:12px;
-    margin-top:10px
-}
+    button:active {
+      transform: scale(0.99);
+    }
 
-.rota{
-    background:#111a2b;
-    padding:12px;
-    border-radius:12px;
-    margin-top:10px
-}
+    .card {
+      background: #162236;
+      border-radius: 18px;
+      padding: 18px;
+      margin-top: 16px;
+    }
 
-.rota.melhor{
-    border:2px solid #4ade80
-}
+    .resultado {
+      background: #111c2e;
+      border-radius: 16px;
+      padding: 16px;
+      margin-top: 12px;
+    }
 
-.verde{
-    color:#4ade80;
-    font-weight:bold
-}
+    .resultado strong {
+      display: block;
+      font-size: 18px;
+      margin-bottom: 8px;
+    }
 
-.pequeno{
-    color:#94a3b8;
-    font-size:14px
-}
+    .distancia {
+      color: #aab7ca;
+      margin-bottom: 8px;
+    }
 
-.erro{
-    color:#f87171
-}
-</style>
+    #map {
+      height: 430px;
+      margin-top: 16px;
+      border-radius: 18px;
+      overflow: hidden;
+      display: none;
+    }
+
+    .rota {
+      background: #111c2e;
+      border-radius: 16px;
+      padding: 18px;
+      margin-top: 12px;
+      border: 1px solid #24344d;
+    }
+
+    .rota.melhor {
+      border: 2px solid #4ade80;
+    }
+
+    .melhor-texto {
+      color: #4ade80;
+      font-weight: bold;
+      margin-top: 12px;
+    }
+
+    .alternativa {
+      color: #60a5fa;
+      font-weight: bold;
+    }
+
+    .mensagem {
+      background: #162236;
+      border-radius: 16px;
+      padding: 18px;
+      margin-top: 16px;
+      color: #cbd5e1;
+    }
+
+    .escondido {
+      display: none;
+    }
+
+    .pequeno {
+      color: #94a3b8;
+      font-size: 14px;
+      margin-top: 8px;
+    }
+  </style>
 </head>
 
 <body>
 
 <div class="container">
 
-<h1>🛵 Copiloto de Rotas</h1>
+  <h1>🛵 Copiloto de Rotas</h1>
 
-<div class="status" id="status">
-● GPS aguardando
-</div>
+  <div class="status" id="status">
+    ● GPS aguardando
+  </div>
 
-<input
-id="destino"
-placeholder="Digite o destino">
+  <input
+    id="destino"
+    type="text"
+    placeholder="Digite seu destino"
+    autocomplete="off"
+  >
 
-<button onclick="calcularRotas()">
-📍 Procurar destino
-</button>
+  <button onclick="pesquisarDestino()">
+    📍 Procurar destino
+  </button>
 
-<div id="opcoes"></div>
+  <button onclick="ativarGPS()">
+    📍 Ativar localização
+  </button>
 
-<div id="map"></div>
+  <div id="resultados" class="card escondido"></div>
 
-<div class="card" id="resultado">
-Digite um destino para começar.
-</div>
+  <div id="map"></div>
+
+  <div id="rotas"></div>
+
+  <div id="mensagem" class="mensagem">
+    Digite um destino para começar.
+  </div>
 
 </div>
 
@@ -131,654 +184,614 @@ Digite um destino para começar.
 
 <script>
 
-let latitude = null;
-let longitude = null;
-let destino = null;
-let rotas = [];
-let destinosEncontrados = [];
-let linhas = [];
+let minhaLocalizacao = null;
+let destinoSelecionado = null;
+let mapa = null;
+let marcadores = [];
+let linhasRota = [];
 
-const map = L.map("map").setView(
-    [-0.035, -51.070],
-    10
-);
+/*
+  LIMITES APROXIMADOS DO ESTADO DO AMAPÁ
+*/
+const AMAPA = {
+  sul: -1.5,
+  oeste: -55.0,
+  norte: 4.8,
+  leste: -49.5
+};
 
-L.tileLayer(
-    "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+/*
+  ATIVAR GPS
+*/
+function ativarGPS() {
+
+  const status = document.getElementById("status");
+
+  if (!navigator.geolocation) {
+    status.innerText = "● GPS não disponível";
+    return;
+  }
+
+  status.innerText = "● Localizando...";
+
+  navigator.geolocation.getCurrentPosition(
+
+    function(posicao) {
+
+      minhaLocalizacao = {
+        lat: posicao.coords.latitude,
+        lon: posicao.coords.longitude
+      };
+
+      status.innerText = "● GPS ativo";
+
+      document.getElementById("mensagem").innerText =
+        "Localização encontrada. Agora escolha um destino.";
+
+      mostrarMapaInicial();
+
+    },
+
+    function() {
+
+      status.innerText =
+        "● Permissão de localização negada";
+
+    },
+
     {
-        maxZoom:19,
-        attribution:"© OpenStreetMap"
+      enableHighAccuracy: true,
+      timeout: 15000,
+      maximumAge: 30000
     }
-).addTo(map);
-
-
-function distanciaKm(
-    lat1,
-    lon1,
-    lat2,
-    lon2
-){
-
-    const R = 6371;
-    const rad = Math.PI / 180;
-
-    const dLat =
-        (lat2 - lat1) * rad;
-
-    const dLon =
-        (lon2 - lon1) * rad;
-
-    const a =
-        Math.sin(dLat / 2) ** 2 +
-        Math.cos(lat1 * rad) *
-        Math.cos(lat2 * rad) *
-        Math.sin(dLon / 2) ** 2;
-
-    return 2 * R *
-        Math.asin(
-            Math.sqrt(a)
-        );
+  );
 }
 
+/*
+  PESQUISAR DESTINO
+*/
+async function pesquisarDestino() {
 
-function pegarLocalizacao(){
+  const campo = document.getElementById("destino");
+  const texto = campo.value.trim();
 
-    return new Promise(
-        (resolve,reject)=>{
+  const resultados = document.getElementById("resultados");
+  const mensagem = document.getElementById("mensagem");
 
-            if(!navigator.geolocation){
+  if (!texto) {
+    mensagem.innerText = "Digite um destino para pesquisar.";
+    return;
+  }
 
-                reject(
-                    "GPS não disponível."
-                );
+  resultados.classList.remove("escondido");
 
-                return;
-            }
+  resultados.innerHTML =
+    "<strong>🔎 Procurando no Amapá...</strong>";
 
-            document
-            .getElementById("status")
-            .innerText =
-                "● Obtendo localização...";
-
-            navigator.geolocation.getCurrentPosition(
-
-                function(pos){
-
-                    latitude =
-                        pos.coords.latitude;
-
-                    longitude =
-                        pos.coords.longitude;
-
-                    document
-                    .getElementById("status")
-                    .innerText =
-                        "● GPS ativo";
-
-                    map.setView(
-                        [
-                            latitude,
-                            longitude
-                        ],
-                        12
-                    );
-
-                    resolve();
-
-                },
-
-                function(){
-
-                    reject(
-                        "Não foi possível acessar sua localização."
-                    );
-
-                },
-
-                {
-                    enableHighAccuracy:true,
-                    timeout:15000,
-                    maximumAge:0
-                }
-            );
-        }
-    );
-}
-
-
-async function procurarDestinos(nome){
-
-    const parametros =
-        new URLSearchParams({
-
-            format:"json",
-
-            limit:"20",
-
-            countrycodes:"br",
-
-            addressdetails:"1",
-
-            q:nome + ", Amapá, Brasil"
-
-        });
-
+  try {
 
     const url =
-        "https://nominatim.openstreetmap.org/search?"
-        + parametros.toString();
+      "https://nominatim.openstreetmap.org/search" +
+      "?format=json" +
+      "&addressdetails=1" +
+      "&limit=10" +
+      "&countrycodes=br" +
+      "&bounded=1" +
+      "&viewbox=" +
+      AMAPA.oeste + "," +
+      AMAPA.norte + "," +
+      AMAPA.leste + "," +
+      AMAPA.sul +
+      "&q=" +
+      encodeURIComponent(texto);
 
+    const resposta = await fetch(url, {
+      headers: {
+        "Accept": "application/json"
+      }
+    });
 
-    const resposta =
-        await fetch(url);
-
-
-    if(!resposta.ok){
-
-        throw new Error(
-            "Erro ao procurar destinos."
-        );
+    if (!resposta.ok) {
+      throw new Error("Erro na pesquisa");
     }
 
-
-    const dados =
-        await resposta.json();
-
+    const dados = await resposta.json();
 
     /*
-     * FILTRO FORTE:
-     * Só aceita resultados cujo estado
-     * seja realmente Amapá.
-     */
+      FILTRA NOVAMENTE PARA GARANTIR QUE
+      O RESULTADO SEJA DO AMAPÁ
+    */
+    const filtrados = dados.filter(item => {
 
-    const somenteAmapa =
-        dados.filter(function(item){
+      const estado =
+        (item.address?.state || "").toLowerCase();
 
-            const endereco =
-                item.address || {};
+      const display =
+        (item.display_name || "").toLowerCase();
 
-            const estado =
-                (
-                    endereco.state ||
-                    ""
-                ).toLowerCase();
-
-            const pais =
-                (
-                    endereco.country_code ||
-                    ""
-                ).toLowerCase();
-
-
-            return (
-                pais === "br" &&
-                (
-                    estado === "amapá" ||
-                    estado === "amapa"
-                )
-            );
-
-        });
-
-
-    if(!somenteAmapa.length){
-
-        throw new Error(
-            "Nenhum destino encontrado no Amapá."
-        );
-    }
-
-
-    return somenteAmapa
-
-    .map(function(item){
-
-        return {
-
-            lat:Number(item.lat),
-
-            lon:Number(item.lon),
-
-            nome:item.display_name
-
-        };
-
-    })
-
-    .filter(function(item){
-
-        return Number.isFinite(item.lat)
-        &&
-        Number.isFinite(item.lon);
-
-    })
-
-    .sort(function(a,b){
-
-        return distanciaKm(
-            latitude,
-            longitude,
-            a.lat,
-            a.lon
-        )
-        -
-        distanciaKm(
-            latitude,
-            longitude,
-            b.lat,
-            b.lon
-        );
+      return (
+        estado.includes("amapá") ||
+        estado.includes("amapa") ||
+        display.includes("amapá") ||
+        display.includes("amapa")
+      );
 
     });
 
-}
+    if (filtrados.length === 0) {
 
+      resultados.innerHTML =
+        "<strong>❌ Nenhum destino encontrado no Amapá.</strong>" +
+        "<div class='pequeno'>Tente colocar o nome da rua, bairro ou estabelecimento.</div>";
 
-function mostrarOpcoes(){
-
-    const caixa =
-        document.getElementById(
-            "opcoes"
-        );
-
-
-    caixa.innerHTML =
-        '<div class="card">' +
-        '<strong>📍 Destinos no Amapá</strong>' +
-        '<div class="pequeno">' +
-        'Escolha o local correto:' +
-        '</div>' +
-        '</div>';
-
-
-    destinosEncontrados
-    .slice(0,5)
-    .forEach(
-        function(destinoItem,index){
-
-            const distancia =
-                distanciaKm(
-                    latitude,
-                    longitude,
-                    destinoItem.lat,
-                    destinoItem.lon
-                )
-                .toFixed(1)
-                .replace(".",",");
-
-
-            const div =
-                document.createElement(
-                    "div"
-                );
-
-
-            div.className =
-                "opcao";
-
-
-            div.innerHTML =
-
-                "<strong>" +
-                (index + 1) +
-                ". " +
-                destinoItem.nome +
-                "</strong>" +
-
-                "<div class='pequeno'>" +
-                distancia +
-                " km da sua localização" +
-                "</div>" +
-
-                "<button onclick='usarDestino(" +
-                index +
-                ")'>" +
-                "Usar este destino" +
-                "</button>";
-
-
-            caixa.appendChild(div);
-
-        }
-    );
-}
-
-
-async function calcularRotas(){
-
-    const nome =
-        document
-        .getElementById("destino")
-        .value
-        .trim();
-
-
-    const resultado =
-        document.getElementById(
-            "resultado"
-        );
-
-
-    document.getElementById(
-        "opcoes"
-    ).innerHTML = "";
-
-
-    if(!nome){
-
-        resultado.innerText =
-            "Digite um destino primeiro.";
-
-        return;
+      return;
     }
 
+    resultados.innerHTML =
+      "<strong>📍 Destinos encontrados no Amapá</strong>" +
+      "<div class='pequeno'>Escolha o local correto:</div>";
 
-    try{
+    filtrados.forEach((item, indice) => {
 
-        resultado.innerText =
-            "Obtendo localização...";
+      const div = document.createElement("div");
 
+      div.className = "resultado";
 
-        await pegarLocalizacao();
+      const nome =
+        item.display_name || "Destino";
 
+      let distanciaTexto = "";
 
-        resultado.innerText =
-            "Procurando somente no Amapá...";
+      if (minhaLocalizacao) {
 
+        const distancia =
+          calcularDistancia(
+            minhaLocalizacao.lat,
+            minhaLocalizacao.lon,
+            parseFloat(item.lat),
+            parseFloat(item.lon)
+          );
 
-        destinosEncontrados =
-            await procurarDestinos(
-                nome
-            );
+        distanciaTexto =
+          formatarDistancia(distancia) +
+          " da sua localização";
 
+      }
 
-        if(
-            destinosEncontrados.length === 1
-        ){
+      div.innerHTML = `
+        <strong>${indice + 1}. ${escaparHTML(nome)}</strong>
+        <div class="distancia">${distanciaTexto}</div>
+        <button>
+          Usar este destino
+        </button>
+      `;
 
-            usarDestino(0);
+      div.querySelector("button").onclick = function() {
 
-            return;
-        }
+        selecionarDestino(item);
 
+      };
 
-        mostrarOpcoes();
+      resultados.appendChild(div);
 
+    });
 
-        resultado.innerText =
-            "Escolha o destino correto acima.";
+  } catch (erro) {
 
-    }
-    catch(erro){
+    resultados.innerHTML =
+      "<strong>❌ Não foi possível pesquisar agora.</strong>" +
+      "<div class='pequeno'>Verifique sua internet e tente novamente.</div>";
 
-        resultado.innerHTML =
-            "<span class='erro'>" +
-            (
-                erro.message ||
-                erro
-            ) +
-            "</span>";
-
-    }
+  }
 }
 
+/*
+  SELECIONAR DESTINO
+*/
+function selecionarDestino(item) {
 
-async function usarDestino(index){
+  destinoSelecionado = {
+    lat: parseFloat(item.lat),
+    lon: parseFloat(item.lon),
+    nome: item.display_name
+  };
 
-    destino =
-        destinosEncontrados[index];
+  document.getElementById("destino").value =
+    item.display_name;
 
+  document.getElementById("resultados").classList.add("escondido");
 
-    document.getElementById(
-        "opcoes"
-    ).innerHTML = "";
+  if (!minhaLocalizacao) {
 
+    document.getElementById("mensagem").innerText =
+      "Destino selecionado. Ative sua localização para calcular a rota.";
 
-    const resultado =
-        document.getElementById(
-            "resultado"
-        );
+    ativarGPS();
 
+    return;
+  }
 
-    resultado.innerText =
-        "Calculando melhores rotas...";
+  calcularRotas();
 
+}
 
-    try{
+/*
+  MOSTRAR MAPA
+*/
+function mostrarMapaInicial() {
 
-        const coordenadas =
-            longitude +
-            "," +
-            latitude +
-            ";" +
-            destino.lon +
-            "," +
-            destino.lat;
+  if (!minhaLocalizacao) return;
 
+  criarMapa();
 
-        const url =
-            "https://router.project-osrm.org/route/v1/driving/" +
-            coordenadas +
-            "?alternatives=3" +
-            "&overview=full" +
-            "&geometries=geojson";
+  mapa.setView(
+    [
+      minhaLocalizacao.lat,
+      minhaLocalizacao.lon
+    ],
+    13
+  );
 
+  limparMapa();
 
-        const resposta =
-            await fetch(url);
+  const marcador = L.marker([
+    minhaLocalizacao.lat,
+    minhaLocalizacao.lon
+  ])
+  .addTo(mapa)
+  .bindPopup("📍 Sua localização");
 
+  marcadores.push(marcador);
 
-        const dados =
-            await resposta.json();
+}
 
+/*
+  CRIAR MAPA
+*/
+function criarMapa() {
 
-        if(
-            dados.code !== "Ok" ||
-            !dados.routes ||
-            !dados.routes.length
-        ){
+  const elemento = document.getElementById("map");
 
-            throw new Error(
-                "Não encontrei uma rota."
-            );
-        }
+  elemento.style.display = "block";
 
+  if (mapa) return;
 
-        rotas =
-            dados.routes;
+  mapa = L.map("map");
 
+  L.tileLayer(
+    "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+    {
+      maxZoom: 19,
+      attribution:
+        '&copy; OpenStreetMap contributors'
+    }
+  ).addTo(mapa);
 
-        mostrarRotas();
+}
+
+/*
+  CALCULAR ROTAS
+*/
+async function calcularRotas() {
+
+  if (!minhaLocalizacao || !destinoSelecionado) {
+
+    document.getElementById("mensagem").innerText =
+      "Ative o GPS e escolha um destino.";
+
+    return;
+  }
+
+  const rotasDiv =
+    document.getElementById("rotas");
+
+  rotasDiv.innerHTML =
+    "<div class='card'><strong>🛣️ Calculando melhores rotas...</strong></div>";
+
+  criarMapa();
+
+  limparMapa();
+
+  try {
+
+    const origem =
+      minhaLocalizacao.lon +
+      "," +
+      minhaLocalizacao.lat;
+
+    const destino =
+      destinoSelecionado.lon +
+      "," +
+      destinoSelecionado.lat;
+
+    const url =
+      "https://router.project-osrm.org/route/v1/driving/" +
+      origem +
+      ";" +
+      destino +
+      "?alternatives=true" +
+      "&overview=full" +
+      "&geometries=geojson";
+
+    const resposta = await fetch(url);
+
+    if (!resposta.ok) {
+      throw new Error("Erro no roteamento");
+    }
+
+    const dados = await resposta.json();
+
+    if (
+      dados.code !== "Ok" ||
+      !dados.routes ||
+      dados.routes.length === 0
+    ) {
+
+      throw new Error("Nenhuma rota encontrada");
 
     }
-    catch(erro){
 
-        resultado.innerHTML =
-            "<span class='erro'>" +
-            (
-                erro.message ||
-                erro
-            ) +
-            "</span>";
+    desenharRotas(dados.routes);
 
-    }
+  } catch (erro) {
+
+    rotasDiv.innerHTML =
+      "<div class='mensagem'>" +
+      "❌ Não foi possível calcular a rota agora." +
+      "</div>";
+
+  }
+
 }
 
+/*
+  DESENHAR ROTAS
+*/
+function desenharRotas(rotas) {
 
-function limparLinhas(){
+  limparMapa();
 
-    linhas.forEach(
-        function(linha){
+  const rotasDiv =
+    document.getElementById("rotas");
 
-            map.removeLayer(
-                linha
-            );
+  rotasDiv.innerHTML = "";
 
-        }
-    );
+  const bounds = [];
 
-    linhas = [];
-}
+  rotas.forEach((rota, indice) => {
 
+    const coordenadas =
+      rota.geometry.coordinates.map(coord => [
+        coord[1],
+        coord[0]
+      ]);
 
-function mostrarRotas(){
+    const linha = L.polyline(
+      coordenadas,
+      {
+        weight: indice === 0 ? 6 : 4,
+        opacity: indice === 0 ? 0.9 : 0.55
+      }
+    ).addTo(mapa);
 
-    limparLinhas();
+    linhasRota.push(linha);
 
+    coordenadas.forEach(c => bounds.push(c));
 
-    const resultado =
-        document.getElementById(
-            "resultado"
-        );
+    const distanciaKm =
+      rota.distance / 1000;
 
+    const minutos =
+      Math.round(rota.duration / 60);
 
-    resultado.innerHTML =
-        "<div class='pequeno'>" +
-        "Destino selecionado:" +
-        "</div>" +
+    const melhor =
+      indice === 0;
 
-        "<strong>" +
-        destino.nome +
-        "</strong>";
+    const div =
+      document.createElement("div");
 
+    div.className =
+      melhor
+        ? "rota melhor"
+        : "rota";
 
-    rotas.forEach(
-        function(rota,index){
+    div.innerHTML = `
+      <strong>
+        ${melhor ? "🟢 Melhor opção" : "🔵 Rota alternativa"}
+      </strong>
 
-            const distancia =
-                (
-                    rota.distance /
-                    1000
-                )
-                .toFixed(1)
-                .replace(".",",");
+      <p>
+        ${formatarDistanciaKm(distanciaKm)}
+        •
+        ${minutos} min
+      </p>
 
+      ${
+        melhor
+          ? "<div class='melhor-texto'>Mais rápida entre as opções encontradas.</div>"
+          : "<div class='alternativa'>Outra opção de trajeto.</div>"
+      }
 
-            const tempo =
-                Math.round(
-                    rota.duration /
-                    60
-                );
+      <button>
+        🗺️ Navegar pelo Google Maps
+      </button>
+    `;
 
+    div.querySelector("button").onclick =
+      function() {
 
-            const div =
-                document.createElement(
-                    "div"
-                );
+        abrirGoogleMaps();
 
+      };
 
-            div.className =
-                "rota " +
-                (
-                    index === 0
-                    ? "melhor"
-                    : ""
-                );
+    rotasDiv.appendChild(div);
 
+  });
 
-            div.innerHTML =
+  if (bounds.length > 0) {
 
-                "<strong>" +
+    mapa.fitBounds(bounds, {
+      padding: [20, 20]
+    });
 
-                (
-                    index === 0
-                    ? "🟢 Melhor opção"
-                    : "🔵 Rota alternativa"
-                ) +
+  }
 
-                "</strong>" +
+  const marcadorOrigem =
+    L.marker([
+      minhaLocalizacao.lat,
+      minhaLocalizacao.lon
+    ])
+    .addTo(mapa)
+    .bindPopup("📍 Sua localização");
 
-                "<p>" +
+  marcadores.push(marcadorOrigem);
 
-                distancia +
-                " km • " +
-                tempo +
-                " min" +
-
-                "</p>" +
-
-                (
-                    index === 0
-                    ? "<p class='verde'>" +
-                      "Mais rápida entre as opções." +
-                      "</p>"
-                    : ""
-                ) +
-
-                "<button onclick='abrirMaps()'>" +
-                "🗺️ Navegar pelo Google Maps" +
-                "</button>";
-
-
-            resultado.appendChild(
-                div
-            );
-
-
-            desenharRota(
-                rota,
-                index
-            );
-
-        }
-    );
-}
-
-
-function desenharRota(
-    rota,
-    index
-){
-
-    const pontos =
-        rota.geometry.coordinates
-        .map(
-            function(ponto){
-
-                return [
-                    ponto[1],
-                    ponto[0]
-                ];
-
-            }
-        );
-
-
-    const linha =
-        L.polyline(
-            pontos,
-            {
-
-                color:
-                    index === 0
-                    ? "#22c55e"
-                    : "#3b82f6",
-
-                weight:
-                    index === 0
-                    ? 7
-                    : 4,
-
-                opacity:
-                    index === 0
-                    ? 1
-                    : .5
-
-            }
-        )
-        .addTo(map);
-
-
-    linhas.push(
-        linha
+  const marcadorDestino =
+    L.marker([
+      destinoSelecionado.lat,
+      destinoSelecionado.lon
+    ])
+    .addTo(mapa)
+    .bindPopup(
+      "📍 " +
+      destinoSelecionado.nome
     );
 
+  marcadores.push(marcadorDestino);
 
-    if(index === 0){
+  document.getElementById("mensagem").innerText =
+    "Rota calculada. Escolha a opção que deseja usar.";
 
-        map.fitBounds(
-            linha.getBounds(),
-            {
-                padding:[
-                    20,
-                   
+}
+
+/*
+  ABRIR GOOGLE MAPS
+*/
+function abrirGoogleMaps() {
+
+  if (!minhaLocalizacao || !destinoSelecionado) {
+    return;
+  }
+
+  const url =
+    "https://www.google.com/maps/dir/?api=1" +
+    "&origin=" +
+    minhaLocalizacao.lat +
+    "," +
+    minhaLocalizacao.lon +
+    "&destination=" +
+    destinoSelecionado.lat +
+    "," +
+    destinoSelecionado.lon +
+    "&travelmode=driving";
+
+  window.open(url, "_blank");
+
+}
+
+/*
+  LIMPAR MAPA
+*/
+function limparMapa() {
+
+  marcadores.forEach(m => {
+
+    if (mapa) {
+      mapa.removeLayer(m);
+    }
+
+  });
+
+  linhasRota.forEach(l => {
+
+    if (mapa) {
+      mapa.removeLayer(l);
+    }
+
+  });
+
+  marcadores = [];
+  linhasRota = [];
+
+}
+
+/*
+  DISTÂNCIA
+*/
+function calcularDistancia(
+  lat1,
+  lon1,
+  lat2,
+  lon2
+) {
+
+  const R = 6371;
+
+  const dLat =
+    grausParaRad(lat2 - lat1);
+
+  const dLon =
+    grausParaRad(lon2 - lon1);
+
+  const a =
+    Math.sin(dLat / 2) *
+    Math.sin(dLat / 2) +
+    Math.cos(grausParaRad(lat1)) *
+    Math.cos(grausParaRad(lat2)) *
+    Math.sin(dLon / 2) *
+    Math.sin(dLon / 2);
+
+  const c =
+    2 *
+    Math.atan2(
+      Math.sqrt(a),
+      Math.sqrt(1 - a)
+    );
+
+  return R * c;
+
+}
+
+function grausParaRad(valor) {
+  return valor * Math.PI / 180;
+}
+
+function formatarDistancia(distancia) {
+
+  if (distancia < 1) {
+    return Math.round(distancia * 1000) + " m";
+  }
+
+  return distancia.toFixed(1) + " km";
+
+}
+
+function formatarDistanciaKm(distancia) {
+
+  return distancia.toFixed(1) + " km";
+
+}
+
+/*
+  EVITAR HTML INJETADO NO RESULTADO
+*/
+function escaparHTML(texto) {
+
+  return texto
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+
+}
+
+/*
+  TENTAR GPS AUTOMATICAMENTE
+*/
+ativarGPS();
+
+</script>
+
+</body>
+</html>
