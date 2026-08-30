@@ -2,105 +2,135 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Copiloto de Rotas</title>
 
-<link
-rel="stylesheet"
-href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 
 <style>
-
-*{
-box-sizing:border-box;
-}
+*{box-sizing:border-box}
 
 body{
 margin:0;
 font-family:Arial,sans-serif;
 background:#0b1220;
-color:white;
+color:#fff;
 }
 
 .container{
 max-width:700px;
 margin:auto;
-padding:16px;
+padding:7px;
 }
 
 h1{
-margin:0 0 5px;
-font-size:32px;
+font-size:23px;
+margin:3px 0;
 }
 
 .status{
+font-size:13px;
 color:#4ade80;
-font-size:18px;
-margin-bottom:18px;
-}
-
-.card{
-background:#162236;
-border-radius:18px;
-padding:18px;
-margin-top:16px;
+margin-bottom:6px;
 }
 
 .config{
-display:grid;
-grid-template-columns:1fr 1fr;
-gap:10px;
+background:#162236;
+border-radius:10px;
+padding:8px;
+margin-bottom:6px;
 }
 
-input,
-button{
-width:100%;
-padding:15px;
-font-size:17px;
-border-radius:13px;
-margin-top:10px;
+.config summary{
+font-weight:bold;
+font-size:14px;
+cursor:pointer;
 }
 
-input{
+.config input{
+width:47%;
+padding:8px;
+margin:6px 1%;
 background:#182337;
-color:white;
-border:2px solid #334155;
+color:#fff;
+border:1px solid #334155;
+border-radius:8px;
 }
 
-button{
+.config button{
+width:100%;
+padding:8px;
 border:0;
+border-radius:8px;
+background:#334155;
+color:#fff;
+}
+
+.search{
+display:flex;
+gap:5px;
+}
+
+.search input{
+flex:1;
+min-width:0;
+padding:11px;
+font-size:16px;
+background:#182337;
+color:#fff;
+border:1px solid #334155;
+border-radius:9px;
+}
+
+.search button{
+width:105px;
+padding:9px;
+border:0;
+border-radius:9px;
 background:#2563eb;
-color:white;
+color:#fff;
 font-weight:bold;
 }
 
-#map{
-height:420px;
-margin-top:16px;
-border-radius:18px;
-overflow:hidden;
-display:none;
+.gps{
+width:100%;
+padding:8px;
+margin-top:5px;
+border:0;
+border-radius:8px;
+background:#334155;
+color:#fff;
 }
 
-.resultado{
-background:#111c2e;
-padding:15px;
-border-radius:15px;
-margin-top:12px;
-}
-
+.card,
+.resultado,
 .rota{
 background:#111c2e;
-padding:17px;
-border-radius:16px;
-margin-top:12px;
-border:1px solid #26364d;
+border-radius:11px;
+padding:10px;
+margin-top:6px;
+}
+
+.resultado button,
+.rota button{
+width:100%;
+padding:9px;
+margin-top:6px;
+border:0;
+border-radius:8px;
+background:#2563eb;
+color:#fff;
+font-weight:bold;
 }
 
 .rota.melhor{
 border:2px solid #4ade80;
+}
+
+.custo{
+font-size:18px;
+font-weight:bold;
+margin-top:4px;
 }
 
 .verde{
@@ -108,39 +138,46 @@ color:#4ade80;
 font-weight:bold;
 }
 
-.azul{
-color:#60a5fa;
-font-weight:bold;
-}
-
-.custo{
-font-size:20px;
-font-weight:bold;
-margin-top:10px;
-}
-
 .pequeno{
 color:#94a3b8;
-font-size:14px;
-margin-top:7px;
+font-size:11px;
+margin-top:3px;
 }
 
 .escondido{
 display:none;
 }
 
-.erro{
-color:#f87171;
+.mensagem{
+font-size:12px;
+color:#cbd5e1;
+padding:5px;
 }
 
-@media(max-width:500px){
+#map{
+height:58vh;
+min-height:300px;
+margin-top:6px;
+border-radius:11px;
+overflow:hidden;
+display:none;
+}
 
-.config{
-grid-template-columns:1fr;
+@media(max-width:430px){
+
+h1{
+font-size:21px;
+}
+
+#map{
+height:60vh;
+}
+
+.search button{
+width:100px;
 }
 
 }
-
 </style>
 </head>
 
@@ -150,62 +187,41 @@ grid-template-columns:1fr;
 
 <h1>🛵 Copiloto de Rotas</h1>
 
-<div
-class="status"
-id="status"
->
+<div id="status" class="status">
 ● GPS aguardando
 </div>
 
+<details class="config">
 
-<div class="card">
-
-<strong>⛽ Configuração da moto</strong>
+<summary>⚙️ Configurações</summary>
 
 <div class="pequeno">
-Esses valores ficam salvos no aparelho.
+Preço da gasolina e consumo da moto
 </div>
-
-<div class="config">
-
-<div>
-
-<label>
-Gasolina (R$/L)
-</label>
 
 <input
 id="precoGasolina"
 type="number"
 step="0.01"
 value="6.45"
+placeholder="R$/L"
 >
-
-</div>
-
-<div>
-
-<label>
-Consumo (km/L)
-</label>
 
 <input
 id="consumo"
 type="number"
 step="0.1"
 value="30"
+placeholder="km/L"
 >
 
-</div>
-
-</div>
-
 <button onclick="salvarConfiguracao()">
-💾 Salvar configuração
+Salvar
 </button>
 
-</div>
+</details>
 
+<div class="search">
 
 <input
 id="destino"
@@ -214,91 +230,64 @@ placeholder="Digite o destino"
 autocomplete="off"
 >
 
-
 <button onclick="pesquisarDestino()">
-📍 Procurar destino
+Pesquisar
 </button>
 
+</div>
 
-<button onclick="ativarGPS()">
-📍 Atualizar localização
+<button class="gps" onclick="ativarGPS()">
+📍 Atualizar GPS
 </button>
-
 
 <div
 id="resultados"
-class="card escondido"
-></div>
-
+class="card escondido">
+</div>
 
 <div id="map"></div>
 
-
 <div id="rotas"></div>
 
-
-<div
-id="mensagem"
-class="card"
->
+<div id="mensagem" class="mensagem">
 Digite um destino para começar.
 </div>
 
 </div>
 
-
-<script
-src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-></script>
-
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
 
-let minhaLocalizacao = null;
-
-let destinoSelecionado = null;
-
-let mapa = null;
-
-let marcadores = [];
-
-let linhasRota = [];
+let minhaLocalizacao=null;
+let destinoSelecionado=null;
+let mapa=null;
+let marcadores=[];
+let linhasRota=[];
 
 
-/*
-CONFIGURAÇÃO
-*/
+/* CONFIGURAÇÃO */
 
 function carregarConfiguracao(){
 
-const preco =
-localStorage.getItem(
+const p=localStorage.getItem(
 "precoGasolina"
 );
 
-const consumo =
-localStorage.getItem(
+const c=localStorage.getItem(
 "consumoMoto"
 );
 
-if(preco){
-
-document
-.getElementById(
+if(p){
+document.getElementById(
 "precoGasolina"
-)
-.value = preco;
-
+).value=p;
 }
 
-if(consumo){
-
-document
-.getElementById(
+if(c){
+document.getElementById(
 "consumo"
-)
-.value = consumo;
-
+).value=c;
 }
 
 }
@@ -306,132 +295,114 @@ document
 
 function salvarConfiguracao(){
 
-const preco =
-parseFloat(
-document
-.getElementById(
+const p=parseFloat(
+document.getElementById(
 "precoGasolina"
-)
-.value
+).value
 );
 
-const consumo =
-parseFloat(
-document
-.getElementById(
+const c=parseFloat(
+document.getElementById(
 "consumo"
-)
-.value
+).value
 );
-
 
 if(
-!preco ||
-preco <= 0 ||
-!consumo ||
-consumo <= 0
+p<=0 ||
+c<=0 ||
+!p ||
+!c
 ){
 
-document
-.getElementById(
+document.getElementById(
 "mensagem"
-)
-.innerText =
+).innerText=
 "Informe valores válidos.";
 
 return;
-
 }
-
 
 localStorage.setItem(
 "precoGasolina",
-preco
+p
 );
 
 localStorage.setItem(
 "consumoMoto",
-consumo
+c
 );
 
-
-document
-.getElementById(
+document.getElementById(
 "mensagem"
-)
-.innerText =
+).innerText=
 "Configuração salva.";
 
 }
 
 
-/*
-GPS
-*/
+/* GPS */
 
 function ativarGPS(){
 
-const status =
+if(!navigator.geolocation){
+
 document.getElementById(
 "status"
-);
-
-
-if(
-!navigator.geolocation
-){
-
-status.innerText =
-"● GPS não disponível";
+).innerText=
+"● GPS indisponível";
 
 return;
 
 }
 
-
-status.innerText =
+document.getElementById(
+"status"
+).innerText=
 "● Localizando...";
 
 
-navigator.geolocation
-.getCurrentPosition(
+navigator.geolocation.getCurrentPosition(
 
-function(posicao){
+function(pos){
 
-minhaLocalizacao = {
+minhaLocalizacao={
 
-lat:
-posicao.coords.latitude,
+lat:pos.coords.latitude,
 
-lon:
-posicao.coords.longitude
+lon:pos.coords.longitude
 
 };
 
-
-status.innerText =
+document.getElementById(
+"status"
+).innerText=
 "● GPS ativo";
 
+criarMapa();
 
-mostrarMapaInicial();
+mapa.setView(
+[
+minhaLocalizacao.lat,
+minhaLocalizacao.lon
+],
+13
+);
 
 },
 
 function(){
 
-status.innerText =
+document.getElementById(
+"status"
+).innerText=
 "● Não foi possível obter GPS";
 
 },
 
 {
-
 enableHighAccuracy:true,
-
 timeout:15000,
-
 maximumAge:30000
-
 }
 
 );
@@ -439,101 +410,102 @@ maximumAge:30000
 }
 
 
-/*
-PESQUISA
-*/
+/* MAPA */
+
+function criarMapa(){
+
+const elemento=
+document.getElementById(
+"map"
+);
+
+elemento.style.display=
+"block";
+
+if(mapa)
+return;
+
+mapa=L.map("map");
+
+L.tileLayer(
+"https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+{
+maxZoom:19,
+attribution:"© OpenStreetMap"
+}
+).addTo(mapa);
+
+}
+
+
+/* PESQUISA */
 
 async function pesquisarDestino(){
 
-const texto =
-document
-.getElementById(
+const texto=
+document.getElementById(
 "destino"
-)
-.value
-.trim();
+).value.trim();
 
-
-const resultados =
-document
-.getElementById(
+const resultados=
+document.getElementById(
 "resultados"
 );
 
-
 if(!texto){
 
-document
-.getElementById(
+document.getElementById(
 "mensagem"
-)
-.innerText =
+).innerText=
 "Digite um destino.";
 
 return;
 
 }
 
-
-resultados
-.classList
-.remove(
+resultados.classList.remove(
 "escondido"
 );
 
-
-resultados.innerHTML =
-"<strong>🔎 Procurando no Amapá...</strong>";
+resultados.innerHTML=
+"<b>🔎 Procurando no Amapá...</b>";
 
 
 try{
 
-
-const consultas = [
+const consultas=[
 
 texto,
 
-texto + ", Amapá",
+texto+", Amapá",
 
-texto + ", Santana, Amapá",
+texto+", Santana, Amapá",
 
-texto + ", Macapá, Amapá"
+texto+", Macapá, Amapá"
 
 ];
 
-
-let encontrados = [];
+let encontrados=[];
 
 
 for(
-const consulta
-of consultas
+const consulta of consultas
 ){
 
-const url =
+const url=
 
-"https://nominatim.openstreetmap.org/search" +
-
-"?format=json" +
-
-"&addressdetails=1" +
-
-"&limit=10" +
-
-"&countrycodes=br" +
-
-"&bounded=1" +
-
-"&viewbox=-55,4.8,-49.5,-1.5" +
-
-"&q=" +
-
-encodeURIComponent(
-consulta
-);
+"https://nominatim.openstreetmap.org/search"+
+"?format=json"+
+"&addressdetails=1"+
+"&limit=10"+
+"&countrycodes=br"+
+"&bounded=1"+
+"&viewbox=-55,4.8,-49.5,-1.5"+
+"&q="+
+encodeURIComponent(consulta);
 
 
-const resposta =
+const resposta=
 await fetch(
 url,
 {
@@ -544,79 +516,47 @@ headers:{
 }
 );
 
-
-if(
-!resposta.ok
-)
+if(!resposta.ok)
 continue;
 
-
-const dados =
+const dados=
 await resposta.json();
-
 
 encontrados.push(
 ...dados
 );
 
-
-if(
-dados.length > 0
-)
+if(dados.length>0)
 break;
 
 }
 
 
-/*
-FILTRAR AMAPÁ
-*/
+/* FILTRO AMAPÁ */
 
-const filtrados =
+const filtrados=
 encontrados.filter(
-item => {
+item=>{
 
-const estado =
+const estado=
 (
-item.address?.state
-||
+item.address?.state||
 ""
-)
-.toLowerCase();
+).toLowerCase();
 
-
-const textoCompleto =
+const nome=
 (
-item.display_name
-||
+item.display_name||
 ""
-)
-.toLowerCase();
+).toLowerCase();
 
+return(
 
-return (
-
-estado.includes(
-"amapá"
-)
+estado.includes("amap")
 
 ||
 
-estado.includes(
-"amapa"
-)
-
-||
-
-textoCompleto.includes(
-"amapá"
-)
-
-||
-
-textoCompleto.includes(
-"amapa"
-)
+nome.includes("amap")
 
 );
 
@@ -624,36 +564,29 @@ textoCompleto.includes(
 );
 
 
-/*
-REMOVER DUPLICADOS
-*/
+/* REMOVER DUPLICADOS */
 
-const unicos = [];
-
+const unicos=[];
 
 filtrados.forEach(
-item => {
+item=>{
 
-const chave =
-item.lat +
-"," +
+const chave=
+item.lat+
+","+
 item.lon;
-
 
 if(
 !unicos.some(
-outro =>
-outro.lat +
-"," +
-outro.lon
-===
+x=>
+x.lat+
+","+
+x.lon===
 chave
 )
 ){
 
-unicos.push(
-item
-);
+unicos.push(item);
 
 }
 
@@ -661,18 +594,12 @@ item
 );
 
 
-if(
-unicos.length === 0
-){
+if(unicos.length===0){
 
-resultados.innerHTML =
-
-"<strong>❌ Nenhum local encontrado no Amapá.</strong>" +
-
-"<div class='pequeno'>" +
-
-"Tente usar apenas o nome do local, rua ou bairro." +
-
+resultados.innerHTML=
+"<b>❌ Nenhum local encontrado no Amapá.</b>"+
+"<div class='pequeno'>"+
+"Tente usar o nome da rua, bairro ou estabelecimento."+
 "</div>";
 
 return;
@@ -680,96 +607,70 @@ return;
 }
 
 
-resultados.innerHTML =
-
-"<strong>📍 Destinos encontrados no Amapá</strong>" +
-
-"<div class='pequeno'>" +
-
-"Escolha o local correto:" +
-
-"</div>";
+resultados.innerHTML=
+"<b>📍 Destinos no Amapá</b>"+
+"<div class='pequeno'>Escolha o correto:</div>";
 
 
 unicos
-.slice(0,8)
+.slice(0,6)
 .forEach(
-(item,indice)=>{
+(item,index)=>{
 
-const div =
+const div=
 document.createElement(
 "div"
 );
 
-
-div.className =
+div.className=
 "resultado";
 
 
-let distanciaTexto =
-"";
+let distanciaTexto="";
 
 
-if(
-minhaLocalizacao
-){
+if(minhaLocalizacao){
 
-const distancia =
+const d=
 calcularDistancia(
 
 minhaLocalizacao.lat,
-
 minhaLocalizacao.lon,
 
-parseFloat(
-item.lat
-),
-
-parseFloat(
-item.lon
-)
+parseFloat(item.lat),
+parseFloat(item.lon)
 
 );
 
-
-distanciaTexto =
-
-formatarDistancia(
-distancia
-)
-
-+
-
+distanciaTexto=
+formatarDistancia(d)+
 " da sua localização";
 
 }
 
 
-div.innerHTML = `
+div.innerHTML=
 
-<strong>
-${indice+1}.
-${escaparHTML(
+"<b>"+
+(index+1)+
+". "+
+escaparHTML(
 item.display_name
-)}
-</strong>
+)+
+"</b>"+
 
-<div class="pequeno">
-${distanciaTexto}
-</div>
+"<div class='pequeno'>"+
+distanciaTexto+
+"</div>"+
 
-<button>
-Usar este destino
-</button>
-
-`;
+"<button>"+
+"Usar este destino"+
+"</button>";
 
 
-div
-.querySelector(
+div.querySelector(
 "button"
-)
-.onclick =
+).onclick=
 function(){
 
 selecionarDestino(
@@ -788,16 +689,13 @@ div
 
 
 }
+
 catch(erro){
 
-resultados.innerHTML =
-
-"<strong>❌ Erro na pesquisa.</strong>" +
-
-"<div class='pequeno'>" +
-
-"Verifique sua internet e tente novamente." +
-
+resultados.innerHTML=
+"<b>❌ Erro na pesquisa.</b>"+
+"<div class='pequeno'>"+
+"Verifique a internet e tente novamente."+
 "</div>";
 
 }
@@ -805,242 +703,96 @@ resultados.innerHTML =
 }
 
 
-/*
-SELECIONAR DESTINO
-*/
+/* DESTINO */
 
 function selecionarDestino(item){
 
-destinoSelecionado = {
+destinoSelecionado={
 
-lat:
-parseFloat(
+lat:parseFloat(
 item.lat
 ),
 
-lon:
-parseFloat(
+lon:parseFloat(
 item.lon
 ),
 
-nome:
-item.display_name
+nome:item.display_name
 
 };
 
-
-document
-.getElementById(
+document.getElementById(
 "destino"
-)
-.value =
+).value=
 item.display_name;
 
-
-document
-.getElementById(
+document.getElementById(
 "resultados"
-)
-.classList
-.add(
+).classList.add(
 "escondido"
 );
 
+if(!minhaLocalizacao){
 
-if(
-!minhaLocalizacao
-){
-
-document
-.getElementById(
+document.getElementById(
 "mensagem"
-)
-.innerText =
-"Ative o GPS para calcular a rota.";
+).innerText=
+"Ativando GPS...";
 
 ativarGPS();
+
+setTimeout(
+function(){
+
+if(minhaLocalizacao)
+calcularRotas();
+
+},
+1200
+);
 
 return;
 
 }
-
 
 calcularRotas();
 
 }
 
 
-/*
-MAPA
-*/
-
-function criarMapa(){
-
-const elemento =
-document.getElementById(
-"map"
-);
-
-
-elemento.style.display =
-"block";
-
-
-if(mapa)
-return;
-
-
-mapa =
-L.map(
-"map"
-);
-
-
-L.tileLayer(
-
-"https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-
-{
-
-maxZoom:19,
-
-attribution:
-"&copy; OpenStreetMap contributors"
-
-}
-
-)
-.addTo(
-mapa
-);
-
-}
-
-
-function mostrarMapaInicial(){
-
-if(
-!minhaLocalizacao
-)
-return;
-
-
-criarMapa();
-
-
-mapa.setView(
-
-[
-minhaLocalizacao.lat,
-
-minhaLocalizacao.lon
-],
-
-13
-
-);
-
-
-limparMapa();
-
-
-const marcador =
-L.marker(
-
-[
-minhaLocalizacao.lat,
-
-minhaLocalizacao.lon
-]
-
-)
-.addTo(
-mapa
-)
-.bindPopup(
-"📍 Sua localização"
-);
-
-
-marcadores.push(
-marcador
-);
-
-}
-
-
-/*
-CALCULAR ROTAS
-*/
+/* ROTAS */
 
 async function calcularRotas(){
 
 if(
 !minhaLocalizacao ||
 !destinoSelecionado
-){
-
+)
 return;
 
-}
 
-
-const preco =
+const preco=
 parseFloat(
-document
-.getElementById(
+document.getElementById(
 "precoGasolina"
-)
-.value
+).value
 );
 
-
-const consumo =
+const consumo=
 parseFloat(
-document
-.getElementById(
+document.getElementById(
 "consumo"
-)
-.value
+).value
 );
 
 
-if(
-!preco ||
-preco <= 0 ||
-!consumo ||
-consumo <= 0
-){
-
-document
-.getElementById(
-"mensagem"
-)
-.innerText =
-"Configure preço da gasolina e consumo.";
-
-return;
-
-}
-
-
-const rotasDiv =
+const rotasDiv=
 document.getElementById(
 "rotas"
 );
 
-
-rotasDiv.innerHTML =
-
-"<div class='card'>" +
-
-"<strong>" +
-
-"🛣️ Calculando melhores rotas..." +
-
-"</strong>" +
-
-"</div>";
+rotasDiv.innerHTML=
+"<div class='card'><b>🛣️ Calculando...</b></div>";
 
 
 criarMapa();
@@ -1050,98 +802,56 @@ limparMapa();
 
 try{
 
-
-const origem =
-
-minhaLocalizacao.lon +
-
-"," +
-
+const origem=
+minhaLocalizacao.lon+
+","+
 minhaLocalizacao.lat;
 
-
-const destino =
-
-destinoSelecionado.lon +
-
-"," +
-
+const destino=
+destinoSelecionado.lon+
+","+
 destinoSelecionado.lat;
 
 
-const url =
+const url=
 
-"https://router.project-osrm.org/route/v1/driving/" +
-
-origem +
-
-";" +
-
-destino +
-
-"?alternatives=true" +
-
-"&overview=full" +
-
+"https://router.project-osrm.org/route/v1/driving/"+
+origem+
+";"+
+destino+
+"?alternatives=true"+
+"&overview=full"+
 "&geometries=geojson";
 
 
-const resposta =
-await fetch(
-url
-);
+const resposta=
+await fetch(url);
 
-
-if(
-!resposta.ok
-){
-
-throw new Error(
-"Erro no roteamento."
-);
-
-}
-
-
-const dados =
+const dados=
 await resposta.json();
 
 
 if(
-
-dados.code !== "Ok"
-
-||
-
+dados.code!=="Ok" ||
 !dados.routes
-
-||
-
-dados.routes.length === 0
-
-){
-
-throw new Error(
-"Nenhuma rota encontrada."
-);
-
-}
+)
+throw new Error();
 
 
-desenharRotas(
-dados.routes
+mostrarRotas(
+dados.routes,
+preco,
+consumo
 );
 
 
 }
-catch(erro){
 
-rotasDiv.innerHTML =
+catch(e){
 
-"<div class='card'>" +
-
-"❌ Não foi possível calcular a rota agora." +
-
+rotasDiv.innerHTML=
+"<div class='card'>"+
+"❌ Não foi possível calcular a rota."+
 "</div>";
 
 }
@@ -1149,104 +859,71 @@ rotasDiv.innerHTML =
 }
 
 
-/*
-MOSTRAR ROTAS E CUSTO
-*/
+/* MOSTRAR ROTAS */
 
-function desenharRotas(
-rotas
+function mostrarRotas(
+rotas,
+preco,
+consumo
 ){
 
 limparMapa();
 
-
-const preco =
-parseFloat(
-document
-.getElementById(
-"precoGasolina"
-)
-.value
-);
-
-
-const consumo =
-parseFloat(
-document
-.getElementById(
-"consumo"
-)
-.value
-);
-
-
-const rotasDiv =
+const divRotas=
 document.getElementById(
 "rotas"
 );
 
+divRotas.innerHTML="";
 
-rotasDiv.innerHTML = "";
 
+let menorCusto=Infinity;
 
-const custos = rotas.map(
-rota => {
+rotas.forEach(
+rota=>{
 
-const km =
-rota.distance / 1000;
+const km=
+rota.distance/1000;
 
-return (
-km / consumo
-) * preco;
+const custo=
+(km/consumo)*preco;
+
+if(custo<menorCusto)
+menorCusto=custo;
 
 });
 
 
-const menorCusto =
-Math.min(
-...custos
-);
+const bounds=[];
 
 
 rotas.forEach(
-(rota,indice)=>{
+(rota,index)=>{
 
-const coordenadas =
-rota.geometry.coordinates
-.map(
-coord => [
-
-coord[1],
-
-coord[0]
-
+const pontos=
+rota.geometry.coordinates.map(
+p=>[
+p[1],
+p[0]
 ]
 );
 
 
-const linha =
+const linha=
 L.polyline(
-
-coordenadas,
-
+pontos,
 {
-
 weight:
-indice === 0
-? 6
-: 4,
+index===0
+?6
+:4,
 
 opacity:
-indice === 0
-? 0.9
-: 0.55
-
+index===0
+?.9
+:.5
 }
-
-)
-.addTo(
-mapa
-);
+).addTo(mapa);
 
 
 linhasRota.push(
@@ -1254,149 +931,103 @@ linha
 );
 
 
-const km =
-rota.distance / 1000;
-
-
-const minutos =
-Math.round(
-rota.duration / 60
+pontos.forEach(
+p=>bounds.push(p)
 );
 
 
-const litros =
-km / consumo;
+const km=
+rota.distance/1000;
+
+const minutos=
+Math.round(
+rota.duration/60
+);
+
+const litros=
+km/consumo;
+
+const custo=
+litros*preco;
 
 
-const custo =
-litros * preco;
-
-
-const melhor =
-indice === 0;
-
-
-const economica =
+const economica=
 Math.abs(
-custo - menorCusto
-) < 0.01;
+custo-menorCusto
+)<0.01;
 
 
-const div =
+const div=
 document.createElement(
 "div"
 );
 
-
-div.className =
-
-melhor
-? "rota melhor"
-: "rota";
+div.className=
+index===0
+?"rota melhor"
+:"rota";
 
 
-div.innerHTML = `
+div.innerHTML=
 
-<strong>
+"<b>"+
+(
+index===0
+?"🟢 Melhor rota"
+:"🔵 Alternativa"
+)+
+"</b>"+
 
-${
-melhor
-? "🟢 Melhor opção"
-: "🔵 Rota alternativa"
-}
+"<div>"+
+km.toFixed(1)+
+" km • "+
+minutos+
+" min"+
+"</div>"+
 
-</strong>
+"<div class='custo'>"+
+"⛽ R$ "+
+custo.toFixed(2)+
+"</div>"+
 
-<p>
+"<div class='pequeno'>"+
+litros.toFixed(2)+
+" L de combustível"+
+"</div>"+
 
-📏 ${km.toFixed(1)} km
-
-<br>
-
-⏱️ ${minutos} min
-
-</p>
-
-
-<div class="custo">
-
-⛽ R$ ${custo.toFixed(2)}
-
-</div>
-
-
-<div class="pequeno">
-
-Combustível estimado:
-${litros.toFixed(2)} L
-
-</div>
-
-
-${
+(
 economica
-? "<div class='verde'>💰 Mais econômica</div>"
-: ""
-}
+?"<div class='verde'>💰 Mais econômica</div>"
+:""
+)+
+
+"<button>"+
+"🗺️ Navegar"+
+"</button>";
 
 
-<button>
-
-🗺️ Navegar pelo Google Maps
-
-</button>
-
-`;
-
-
-div
-.querySelector(
+div.querySelector(
 "button"
-)
-.onclick =
+).onclick=
 abrirGoogleMaps;
 
 
-rotasDiv.appendChild(
+divRotas.appendChild(
 div
 );
 
-
-});
-
-
-const bounds = [];
-
-
-rotas.forEach(
-rota => {
-
-rota.geometry.coordinates
-.forEach(
-coord => {
-
-bounds.push(
-[
-coord[1],
-coord[0]
-]
+}
 );
 
-});
 
-});
-
-
-if(
-bounds.length
-){
+if(bounds.length){
 
 mapa.fitBounds(
 bounds,
 {
 padding:[
-20,
-20
+10,
+10
 ]
 }
 );
@@ -1404,70 +1035,42 @@ padding:[
 }
 
 
-const origem =
-L.marker(
+marcadores.push(
 
+L.marker(
 [
 minhaLocalizacao.lat,
-
 minhaLocalizacao.lon
 ]
-
 )
-.addTo(
-mapa
-)
+.addTo(mapa)
 .bindPopup(
 "📍 Sua localização"
-);
+),
 
-
-marcadores.push(
-origem
-);
-
-
-const destino =
 L.marker(
-
 [
 destinoSelecionado.lat,
-
 destinoSelecionado.lon
 ]
-
 )
-.addTo(
-mapa
-)
+.addTo(mapa)
 .bindPopup(
-
-"📍 " +
-
-destinoSelecionado.nome
-
-);
-
-
-marcadores.push(
-destino
-);
-
-
-document
-.getElementById(
-"mensagem"
+"📍 Destino"
 )
-.innerText =
 
-"Rota calculada. O valor mostrado é o custo estimado de combustível.";
+);
+
+
+document.getElementById(
+"mensagem"
+).innerText=
+"Rota pronta.";
 
 }
 
 
-/*
-GOOGLE MAPS
-*/
+/* GOOGLE MAPS */
 
 function abrirGoogleMaps(){
 
@@ -1478,26 +1081,17 @@ if(
 return;
 
 
-const url =
+const url=
 
-"https://www.google.com/maps/dir/?api=1" +
-
-"&origin=" +
-
-minhaLocalizacao.lat +
-
-"," +
-
-minhaLocalizacao.lon +
-
-"&destination=" +
-
-destinoSelecionado.lat +
-
-"," +
-
-destinoSelecionado.lon +
-
+"https://www.google.com/maps/dir/?api=1"+
+"&origin="+
+minhaLocalizacao.lat+
+","+
+minhaLocalizacao.lon+
+"&destination="+
+destinoSelecionado.lat+
+","+
+destinoSelecionado.lon+
 "&travelmode=driving";
 
 
@@ -1509,50 +1103,28 @@ url,
 }
 
 
-/*
-LIMPAR MAPA
-*/
+/* LIMPAR */
 
 function limparMapa(){
 
+if(!mapa)
+return;
+
 marcadores.forEach(
-marcador => {
-
-if(mapa){
-
-mapa.removeLayer(
-marcador
+m=>mapa.removeLayer(m)
 );
-
-}
-
-});
-
 
 linhasRota.forEach(
-linha => {
-
-if(mapa){
-
-mapa.removeLayer(
-linha
+l=>mapa.removeLayer(l)
 );
 
-}
-
-});
-
-
-marcadores = [];
-
-linhasRota = [];
+marcadores=[];
+linhasRota=[];
 
 }
 
 
-/*
-DISTÂNCIA
-*/
+/* DISTÂNCIA */
 
 function calcularDistancia(
 lat1,
@@ -1561,97 +1133,51 @@ lat2,
 lon2
 ){
 
-const R = 6371;
+const R=6371;
 
-const dLat =
-grausParaRad(
-lat2 - lat1
-);
+const dLat=
+(lat2-lat1)*
+Math.PI/180;
 
-const dLon =
-grausParaRad(
-lon2 - lon1
-);
+const dLon=
+(lon2-lon1)*
+Math.PI/180;
 
+const a=
 
-const a =
-
-Math.sin(
-dLat / 2
-) ** 2
-
-+
+Math.sin(dLat/2)**2+
 
 Math.cos(
-grausParaRad(
-lat1
-)
-)
-
-*
+lat1*Math.PI/180
+)*
 
 Math.cos(
-grausParaRad(
-lat2
-)
-)
+lat2*Math.PI/180
+)*
 
-*
-
-Math.sin(
-dLon / 2
-) ** 2;
+Math.sin(dLon/2)**2;
 
 
-const c =
-
-2 *
-
-Math.atan2(
-
-Math.sqrt(a),
-
-Math.sqrt(
-1 - a
-)
-
+return 2*R*Math.asin(
+Math.sqrt(a)
 );
-
-
-return R * c;
-
-}
-
-
-function grausParaRad(
-valor
-){
-
-return valor *
-Math.PI /
-180;
 
 }
 
 
 function formatarDistancia(
-distancia
+d
 ){
 
-if(
-distancia < 1
-){
+if(d<1){
 
 return Math.round(
-distancia * 1000
-) + " m";
+d*1000
+)+" m";
 
 }
 
-
-return distancia.toFixed(
-1
-) + " km";
+return d.toFixed(1)+" km";
 
 }
 
@@ -1661,38 +1187,16 @@ texto
 ){
 
 return texto
-
-.replace(
-/&/g,
-"&amp;"
-)
-
-.replace(
-/</g,
-"&lt;"
-)
-
-.replace(
-/>/g,
-"&gt;"
-)
-
-.replace(
-/"/g,
-"&quot;"
-)
-
-.replace(
-/'/g,
-"&#039;"
-);
+.replace(/&/g,"&amp;")
+.replace(/</g,"&lt;")
+.replace(/>/g,"&gt;")
+.replace(/"/g,"&quot;")
+.replace(/'/g,"&#039;");
 
 }
 
 
-/*
-INICIAR
-*/
+/* INICIAR */
 
 carregarConfiguracao();
 
@@ -1701,4 +1205,4 @@ ativarGPS();
 </script>
 
 </body>
-  </html>
+</html>
