@@ -19,6 +19,10 @@
             </intent-filter>
         </activity>
 
+        <service
+            android:name=".FloatingService"
+            android:exported="false" />
+
     </application>
 
 </manifest>
