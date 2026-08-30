@@ -3,17 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-
 <title>Copiloto de Rotas</title>
 
 <link rel="stylesheet"
 href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 
 <style>
-
-*{
-box-sizing:border-box
-}
+*{box-sizing:border-box}
 
 body{
 margin:0;
@@ -29,7 +25,7 @@ padding:7px
 }
 
 h1{
-font-size:23px;
+font-size:22px;
 margin:3px 0
 }
 
@@ -62,13 +58,19 @@ border:1px solid #334155;
 border-radius:8px
 }
 
-.config button{
+.config button,
+.gps,
+.recalcular{
 width:100%;
-padding:8px;
+padding:9px;
 border:0;
 border-radius:8px;
-background:#334155;
-color:#fff
+color:#fff;
+font-weight:bold
+}
+
+.config button{
+background:#334155
 }
 
 .search{
@@ -97,23 +99,23 @@ color:#fff;
 font-weight:bold
 }
 
-.gps,
-.recalcular{
-width:100%;
-padding:9px;
-margin-top:5px;
-border:0;
-border-radius:8px;
-color:#fff;
-font-weight:bold
-}
-
 .gps{
+margin-top:5px;
 background:#334155
 }
 
 .recalcular{
+margin-top:5px;
 background:#16a34a;
+display:none
+}
+
+.auto{
+background:#162236;
+padding:7px;
+border-radius:9px;
+margin-top:5px;
+font-size:12px;
 display:none
 }
 
@@ -177,23 +179,6 @@ border-radius:11px;
 overflow:hidden;
 display:none
 }
-
-@media(max-width:430px){
-
-h1{
-font-size:21px
-}
-
-#map{
-height:60vh
-}
-
-.search button{
-width:100px
-}
-
-}
-
 </style>
 </head>
 
@@ -206,7 +191,6 @@ width:100px
 <div id="status" class="status">
 ● GPS aguardando
 </div>
-
 
 <details class="config">
 
@@ -238,7 +222,6 @@ Salvar
 
 </details>
 
-
 <div class="search">
 
 <input
@@ -254,11 +237,9 @@ Pesquisar
 
 </div>
 
-
 <button class="gps" onclick="ativarGPS()">
 📍 Atualizar GPS
 </button>
-
 
 <button
 id="botaoRecalcular"
@@ -268,18 +249,21 @@ onclick="recalcularRota()"
 ⚡ Recalcular rota
 </button>
 
+<div
+id="autoStatus"
+class="auto"
+>
+🔄 Atualização automática ativa
+</div>
 
 <div
 id="resultados"
 class="card escondido">
 </div>
 
-
 <div id="map"></div>
 
-
 <div id="rotas"></div>
-
 
 <div id="mensagem" class="mensagem">
 Digite um destino para começar.
@@ -287,101 +271,68 @@ Digite um destino para começar.
 
 </div>
 
-
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
 
 <script>
 
 let minhaLocalizacao=null;
-
 let destinoSelecionado=null;
-
 let mapa=null;
-
 let marcadores=[];
-
 let linhasRota=[];
+
+let gpsWatcher=null;
+
+let recalculoEmAndamento=false;
+
+let ultimoRecalculo=0;
+
+let localDoUltimoRecalculo=null;
+
+const INTERVALO_MINIMO=20000;
+
+const DISTANCIA_MINIMA=150;
 
 
 /* CONFIGURAÇÃO */
 
 function carregarConfiguracao(){
 
-const p=
-localStorage.getItem(
-"precoGasolina"
-);
+const p=localStorage.getItem("precoGasolina");
+const c=localStorage.getItem("consumoMoto");
 
-const c=
-localStorage.getItem(
-"consumoMoto"
-);
+if(p)
+document.getElementById("precoGasolina").value=p;
 
-if(p){
-
-document.getElementById(
-"precoGasolina"
-).value=p;
-
-}
-
-if(c){
-
-document.getElementById(
-"consumo"
-).value=c;
-
-}
+if(c)
+document.getElementById("consumo").value=c;
 
 }
 
 
 function salvarConfiguracao(){
 
-const p=
-parseFloat(
-document.getElementById(
-"precoGasolina"
-).value
+const p=parseFloat(
+document.getElementById("precoGasolina").value
 );
 
-const c=
-parseFloat(
-document.getElementById(
-"consumo"
-).value
+const c=parseFloat(
+document.getElementById("consumo").value
 );
 
-if(
-p<=0 ||
-c<=0 ||
-!p ||
-!c
-){
+if(!p || p<=0 || !c || c<=0){
 
-document.getElementById(
-"mensagem"
-).innerText=
+document.getElementById("mensagem").innerText=
 "Informe valores válidos.";
 
 return;
 
 }
 
-localStorage.setItem(
-"precoGasolina",
-p
-);
+localStorage.setItem("precoGasolina",p);
+localStorage.setItem("consumoMoto",c);
 
-localStorage.setItem(
-"consumoMoto",
-c
-);
-
-document.getElementById(
-"mensagem"
-).innerText=
+document.getElementById("mensagem").innerText=
 "Configuração salva.";
 
 }
@@ -389,60 +340,52 @@ document.getElementById(
 
 /* GPS */
 
-function ativarGPS(){
+function iniciarGPSContinuo(){
 
-if(!navigator.geolocation){
-
-document.getElementById(
-"status"
-).innerText=
-"● GPS indisponível";
-
+if(!navigator.geolocation)
 return;
 
-}
+if(gpsWatcher!==null)
+return;
 
-document.getElementById(
-"status"
-).innerText=
-"● Localizando...";
-
-
-navigator.geolocation.getCurrentPosition(
+gpsWatcher=navigator.geolocation.watchPosition(
 
 function(pos){
 
-minhaLocalizacao={
-
+const nova={
 lat:pos.coords.latitude,
-
 lon:pos.coords.longitude
-
 };
 
-document.getElementById(
-"status"
-).innerText=
+const anterior=minhaLocalizacao;
+
+minhaLocalizacao=nova;
+
+document.getElementById("status").innerText=
 "● GPS ativo";
 
 
 criarMapa();
 
+if(!destinoSelecionado){
+
 mapa.setView(
-[
-minhaLocalizacao.lat,
-minhaLocalizacao.lon
-],
+[nova.lat,nova.lon],
 13
 );
 
+}
 
-if(destinoSelecionado){
 
-document.getElementById(
-"botaoRecalcular"
-).style.display=
-"block";
+if(
+destinoSelecionado &&
+anterior
+){
+
+verificarRecalculoAutomatico(
+anterior,
+nova
+);
 
 }
 
@@ -450,17 +393,183 @@ document.getElementById(
 
 function(){
 
-document.getElementById(
-"status"
-).innerText=
-"● Não foi possível obter GPS";
+document.getElementById("status").innerText=
+"● Erro no GPS";
+
+},
+
+{
+
+enableHighAccuracy:true,
+timeout:15000,
+maximumAge:5000
+
+}
+
+);
+
+}
+
+
+function ativarGPS(){
+
+document.getElementById("status").innerText=
+"● Localizando...";
+
+iniciarGPSContinuo();
+
+}
+
+
+/* RECÁLCULO AUTOMÁTICO */
+
+function verificarRecalculoAutomatico(
+anterior,
+atual
+){
+
+if(
+recalculoEmAndamento ||
+!destinoSelecionado
+)
+return;
+
+
+const agora=Date.now();
+
+if(
+agora-ultimoRecalculo<
+INTERVALO_MINIMO
+)
+return;
+
+
+if(!localDoUltimoRecalculo){
+
+localDoUltimoRecalculo={
+lat:atual.lat,
+lon:atual.lon
+};
+
+return;
+
+}
+
+
+const distanciaPercorrida=
+calcularDistancia(
+
+localDoUltimoRecalculo.lat,
+localDoUltimoRecalculo.lon,
+
+atual.lat,
+atual.lon
+
+);
+
+
+if(
+distanciaPercorrida<DISTANCIA_MINIMA
+)
+return;
+
+
+recalcularAutomatico();
+
+}
+
+
+async function recalcularAutomatico(){
+
+if(
+recalculoEmAndamento ||
+!destinoSelecionado ||
+!minhaLocalizacao
+)
+return;
+
+
+recalculoEmAndamento=true;
+
+ultimoRecalculo=Date.now();
+
+localDoUltimoRecalculo={
+lat:minhaLocalizacao.lat,
+lon:minhaLocalizacao.lon
+};
+
+
+document.getElementById("autoStatus").style.display=
+"block";
+
+document.getElementById("mensagem").innerText=
+"🔄 Atualizando rota...";
+
+
+try{
+
+await calcularRotas();
+
+}
+finally{
+
+recalculoEmAndamento=false;
+
+}
+
+}
+
+
+/* RECÁLCULO MANUAL */
+
+function recalcularRota(){
+
+if(!destinoSelecionado){
+
+document.getElementById("mensagem").innerText=
+"Escolha um destino primeiro.";
+
+return;
+
+}
+
+if(recalculoEmAndamento)
+return;
+
+document.getElementById("mensagem").innerText=
+"📍 Atualizando localização...";
+
+navigator.geolocation.getCurrentPosition(
+
+function(pos){
+
+minhaLocalizacao={
+lat:pos.coords.latitude,
+lon:pos.coords.longitude
+};
+
+ultimoRecalculo=0;
+
+localDoUltimoRecalculo={
+lat:minhaLocalizacao.lat,
+lon:minhaLocalizacao.lon
+};
+
+calcularRotas();
+
+},
+
+function(){
+
+document.getElementById("mensagem").innerText=
+"❌ Não foi possível atualizar o GPS.";
 
 },
 
 {
 enableHighAccuracy:true,
 timeout:15000,
-maximumAge:30000
+maximumAge:0
 }
 
 );
@@ -472,13 +581,9 @@ maximumAge:30000
 
 function criarMapa(){
 
-const elemento=
-document.getElementById(
-"map"
-);
+const elemento=document.getElementById("map");
 
-elemento.style.display=
-"block";
+elemento.style.display="block";
 
 if(mapa)
 return;
@@ -501,50 +606,37 @@ attribution:"© OpenStreetMap"
 async function pesquisarDestino(){
 
 const texto=
-document.getElementById(
-"destino"
-).value.trim();
+document.getElementById("destino").value.trim();
 
 const resultados=
-document.getElementById(
-"resultados"
-);
+document.getElementById("resultados");
 
 if(!texto){
 
-document.getElementById(
-"mensagem"
-).innerText=
+document.getElementById("mensagem").innerText=
 "Digite um destino.";
 
 return;
 
 }
 
-resultados.classList.remove(
-"escondido"
-);
+resultados.classList.remove("escondido");
 
 resultados.innerHTML=
 "<b>🔎 Procurando no Amapá...</b>";
-
 
 try{
 
 const consultas=[
 
 texto,
-
 texto+", Amapá",
-
 texto+", Santana, Amapá",
-
 texto+", Macapá, Amapá"
 
 ];
 
 let encontrados=[];
-
 
 for(
 const consulta of consultas
@@ -562,14 +654,12 @@ const url=
 "&q="+
 encodeURIComponent(consulta);
 
-
 const resposta=
 await fetch(
 url,
 {
 headers:{
-"Accept":
-"application/json"
+"Accept":"application/json"
 }
 }
 );
@@ -580,17 +670,13 @@ continue;
 const dados=
 await resposta.json();
 
-encontrados.push(
-...dados
-);
+encontrados.push(...dados);
 
 if(dados.length>0)
 break;
 
 }
 
-
-/* FILTRAR AMAPÁ */
 
 const filtrados=
 encontrados.filter(
@@ -609,7 +695,7 @@ item.display_name||
 ).toLowerCase();
 
 return(
-estado.includes("amap") ||
+estado.includes("amap")||
 nome.includes("amap")
 );
 
@@ -617,25 +703,16 @@ nome.includes("amap")
 );
 
 
-/* REMOVER DUPLICADOS */
-
 const unicos=[];
 
 filtrados.forEach(
 item=>{
 
-const chave=
-item.lat+
-","+
-item.lon;
-
 if(
 !unicos.some(
 x=>
-x.lat+
-","+
-x.lon===
-chave
+x.lat===item.lat&&
+x.lon===item.lon
 )
 ){
 
@@ -650,10 +727,7 @@ unicos.push(item);
 if(unicos.length===0){
 
 resultados.innerHTML=
-"<b>❌ Nenhum local encontrado no Amapá.</b>"+
-"<div class='pequeno'>"+
-"Tente usar o nome da rua, bairro ou estabelecimento."+
-"</div>";
+"<b>❌ Nenhum local encontrado no Amapá.</b>";
 
 return;
 
@@ -665,42 +739,29 @@ resultados.innerHTML=
 "<div class='pequeno'>Escolha o correto:</div>";
 
 
-unicos
-.slice(0,6)
-.forEach(
+unicos.slice(0,6).forEach(
 (item,index)=>{
 
 const div=
-document.createElement(
-"div"
-);
+document.createElement("div");
 
-div.className=
-"resultado";
+div.className="resultado";
 
-
-let distanciaTexto="";
-
+let d="";
 
 if(minhaLocalizacao){
 
-const d=
+d=
+formatarDistancia(
 calcularDistancia(
-
 minhaLocalizacao.lat,
 minhaLocalizacao.lon,
-
-parseFloat(item.lat),
-parseFloat(item.lon)
-
++item.lat,
++item.lon
+)
 );
 
-distanciaTexto=
-formatarDistancia(d)+
-" da sua localização";
-
 }
-
 
 div.innerHTML=
 
@@ -713,43 +774,28 @@ item.display_name
 "</b>"+
 
 "<div class='pequeno'>"+
-distanciaTexto+
+d+
 "</div>"+
 
-"<button>"+
-"Usar este destino"+
-"</button>";
+"<button>Usar este destino</button>";
 
-
-div.querySelector(
-"button"
-).onclick=
+div.querySelector("button").onclick=
 function(){
 
-selecionarDestino(
-item
-);
+selecionarDestino(item);
 
 };
 
-
-resultados.appendChild(
-div
-);
+resultados.appendChild(div);
 
 }
 );
 
-
 }
-
-catch(erro){
+catch(e){
 
 resultados.innerHTML=
-"<b>❌ Erro na pesquisa.</b>"+
-"<div class='pequeno'>"+
-"Verifique a internet e tente novamente."+
-"</div>";
+"<b>❌ Erro na pesquisa.</b>";
 
 }
 
@@ -762,128 +808,49 @@ function selecionarDestino(item){
 
 destinoSelecionado={
 
-lat:parseFloat(
-item.lat
-),
-
-lon:parseFloat(
-item.lon
-),
-
+lat:+item.lat,
+lon:+item.lon,
 nome:item.display_name
 
 };
 
-
-document.getElementById(
-"destino"
-).value=
+document.getElementById("destino").value=
 item.display_name;
 
+document.getElementById("resultados")
+.classList.add("escondido");
 
-document.getElementById(
-"resultados"
-).classList.add(
-"escondido"
-);
+document.getElementById("botaoRecalcular")
+.style.display="block";
 
-
-document.getElementById(
-"botaoRecalcular"
-).style.display=
-"block";
+document.getElementById("autoStatus")
+.style.display="block";
 
 
 if(!minhaLocalizacao){
 
-document.getElementById(
-"mensagem"
-).innerText=
-"Ativando GPS...";
-
 ativarGPS();
 
-return;
-
-}
-
-calcularRotas();
-
-}
-
-
-/* RECALCULAR ROTA */
-
-function recalcularRota(){
-
-if(!destinoSelecionado){
-
-document.getElementById(
-"mensagem"
-).innerText=
-"Escolha um destino primeiro.";
-
-return;
-
-}
-
-
-document.getElementById(
-"mensagem"
-).innerText=
-"📍 Atualizando sua localização...";
-
-
-if(!navigator.geolocation){
-
-document.getElementById(
-"mensagem"
-).innerText=
-"GPS não disponível.";
-
-return;
-
-}
-
-
-navigator.geolocation.getCurrentPosition(
-
-function(pos){
-
-minhaLocalizacao={
-
-lat:pos.coords.latitude,
-
-lon:pos.coords.longitude
-
-};
-
-document.getElementById(
-"status"
-).innerText=
-"● GPS atualizado";
-
-
-calcularRotas();
-
-},
-
+setTimeout(
 function(){
 
-document.getElementById(
-"mensagem"
-).innerText=
-"❌ Não foi possível atualizar sua localização.";
+if(minhaLocalizacao)
+calcularRotas();
 
 },
+1200
+);
 
-{
-enableHighAccuracy:true,
-timeout:15000,
-maximumAge:0
+return;
+
 }
 
-);
+localDoUltimoRecalculo={
+lat:minhaLocalizacao.lat,
+lon:minhaLocalizacao.lon
+};
+
+calcularRotas();
 
 }
 
@@ -899,27 +866,28 @@ if(
 return;
 
 
+if(recalculoEmAndamento &&
+Date.now()-ultimoRecalculo<1000)
+return;
+
+
+recalculoEmAndamento=true;
+
+ultimoRecalculo=Date.now();
+
+
 const preco=
 parseFloat(
-document.getElementById(
-"precoGasolina"
-).value
+document.getElementById("precoGasolina").value
 );
 
 const consumo=
 parseFloat(
-document.getElementById(
-"consumo"
-).value
+document.getElementById("consumo").value
 );
 
 
-const rotasDiv=
-document.getElementById(
-"rotas"
-);
-
-rotasDiv.innerHTML=
+document.getElementById("rotas").innerHTML=
 "<div class='card'><b>🛣️ Calculando...</b></div>";
 
 
@@ -953,15 +921,20 @@ destino+
 
 
 const resposta=
-await fetch(url);
+await fetch(
+url
+);
+
+if(!resposta.ok)
+throw new Error();
 
 const dados=
 await resposta.json();
 
-
 if(
-dados.code!=="Ok" ||
-!dados.routes
+dados.code!=="Ok"||
+!dados.routes||
+!dados.routes.length
 )
 throw new Error();
 
@@ -973,14 +946,24 @@ consumo
 );
 
 
-}
+localDoUltimoRecalculo={
+lat:minhaLocalizacao.lat,
+lon:minhaLocalizacao.lon
+};
 
+
+}
 catch(e){
 
-rotasDiv.innerHTML=
+document.getElementById("rotas").innerHTML=
 "<div class='card'>"+
 "❌ Não foi possível calcular a rota."+
 "</div>";
+
+}
+finally{
+
+recalculoEmAndamento=false;
 
 }
 
@@ -998,12 +981,9 @@ consumo
 limparMapa();
 
 const divRotas=
-document.getElementById(
-"rotas"
-);
+document.getElementById("rotas");
 
 divRotas.innerHTML="";
-
 
 let menorCusto=Infinity;
 
@@ -1019,7 +999,8 @@ const custo=
 if(custo<menorCusto)
 menorCusto=custo;
 
-});
+}
+);
 
 
 const bounds=[];
@@ -1041,22 +1022,13 @@ const linha=
 L.polyline(
 pontos,
 {
-weight:
-index===0
-?6
-:4,
-
-opacity:
-index===0
-?.9
-:.5
+weight:index===0?6:4,
+opacity:index===0?.9:.5
 }
 ).addTo(mapa);
 
 
-linhasRota.push(
-linha
-);
+linhasRota.push(linha);
 
 
 pontos.forEach(
@@ -1078,7 +1050,6 @@ km/consumo;
 const custo=
 litros*preco;
 
-
 const economica=
 Math.abs(
 custo-menorCusto
@@ -1086,9 +1057,7 @@ custo-menorCusto
 
 
 const div=
-document.createElement(
-"div"
-);
+document.createElement("div");
 
 div.className=
 index===0
@@ -1129,20 +1098,14 @@ economica
 :""
 )+
 
-"<button>"+
-"🗺️ Navegar"+
-"</button>";
+"<button>🗺️ Navegar</button>";
 
 
-div.querySelector(
-"button"
-).onclick=
+div.querySelector("button").onclick=
 abrirGoogleMaps;
 
 
-divRotas.appendChild(
-div
-);
+divRotas.appendChild(div);
 
 }
 );
@@ -1153,10 +1116,7 @@ if(bounds.length){
 mapa.fitBounds(
 bounds,
 {
-padding:[
-10,
-10
-]
+padding:[10,10]
 }
 );
 
@@ -1190,10 +1150,8 @@ destinoSelecionado.lon
 );
 
 
-document.getElementById(
-"mensagem"
-).innerText=
-"Rota pronta. Se mudar de posição, use ⚡ Recalcular rota.";
+document.getElementById("mensagem").innerText=
+"Rota atualizada automaticamente.";
 
 }
 
@@ -1203,7 +1161,7 @@ document.getElementById(
 function abrirGoogleMaps(){
 
 if(
-!minhaLocalizacao ||
+!minhaLocalizacao||
 !destinoSelecionado
 )
 return;
@@ -1231,7 +1189,7 @@ url,
 }
 
 
-/* LIMPAR */
+/* LIMPAR MAPA */
 
 function limparMapa(){
 
@@ -1293,26 +1251,17 @@ Math.sqrt(a)
 }
 
 
-function formatarDistancia(
-d
-){
+function formatarDistancia(d){
 
-if(d<1){
-
-return Math.round(
-d*1000
-)+" m";
-
-}
+if(d<1)
+return Math.round(d*1000)+" m";
 
 return d.toFixed(1)+" km";
 
 }
 
 
-function escaparHTML(
-texto
-){
+function escaparHTML(texto){
 
 return texto
 .replace(/&/g,"&amp;")
