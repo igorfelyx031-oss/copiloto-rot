@@ -6,7 +6,9 @@ import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.webkit.GeolocationPermissions;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
@@ -90,6 +92,58 @@ public class MainActivity extends Activity {
         );
 
         setContentView(webView);
+
+        iniciarBotaoFlutuante();
+    }
+
+    private void iniciarBotaoFlutuante() {
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M
+                && !Settings.canDrawOverlays(this)) {
+
+            Intent intent = new Intent(
+                    Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                    Uri.parse("package:" + getPackageName())
+            );
+
+            try {
+                startActivity(intent);
+            } catch (Exception e) {
+                startActivity(
+                        new Intent(
+                                Settings.ACTION_MANAGE_OVERLAY_PERMISSION
+                        )
+                );
+            }
+
+            return;
+        }
+
+        try {
+
+            Intent serviceIntent =
+                    new Intent(this, FloatingService.class);
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                startForegroundService(serviceIntent);
+            } else {
+                startService(serviceIntent);
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M
+                || Settings.canDrawOverlays(this)) {
+
+            iniciarBotaoFlutuante();
+        }
     }
 
     private boolean openExternalUrl(String url) {
@@ -98,8 +152,6 @@ public class MainActivity extends Activity {
             return false;
         }
 
-        // Abre links intent:// no aplicativo externo,
-        // como o Google Maps.
         if (url.startsWith("intent://")) {
 
             try {
@@ -110,7 +162,6 @@ public class MainActivity extends Activity {
                 );
 
                 intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-
                 startActivity(intent);
 
                 return true;
@@ -151,7 +202,6 @@ public class MainActivity extends Activity {
             }
         }
 
-        // Também permite links de navegação direta.
         if (url.startsWith("geo:")
                 || url.startsWith("google.navigation:")) {
 
@@ -162,10 +212,7 @@ public class MainActivity extends Activity {
                         Uri.parse(url)
                 );
 
-                intent.addFlags(
-                        Intent.FLAG_ACTIVITY_NEW_TASK
-                );
-
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                 startActivity(intent);
 
                 return true;
@@ -183,11 +230,8 @@ public class MainActivity extends Activity {
     public void onBackPressed() {
 
         if (webView.canGoBack()) {
-
             webView.goBack();
-
         } else {
-
             super.onBackPressed();
         }
     }
