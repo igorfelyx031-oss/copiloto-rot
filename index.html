@@ -3,48 +3,53 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
+
 <title>Copiloto de Rotas</title>
 
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet"
+href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 
 <style>
-*{box-sizing:border-box}
+
+*{
+box-sizing:border-box
+}
 
 body{
 margin:0;
 font-family:Arial,sans-serif;
 background:#0b1220;
-color:#fff;
+color:#fff
 }
 
 .container{
 max-width:700px;
 margin:auto;
-padding:7px;
+padding:7px
 }
 
 h1{
 font-size:23px;
-margin:3px 0;
+margin:3px 0
 }
 
 .status{
 font-size:13px;
 color:#4ade80;
-margin-bottom:6px;
+margin-bottom:6px
 }
 
 .config{
 background:#162236;
 border-radius:10px;
 padding:8px;
-margin-bottom:6px;
+margin-bottom:6px
 }
 
 .config summary{
 font-weight:bold;
 font-size:14px;
-cursor:pointer;
+cursor:pointer
 }
 
 .config input{
@@ -54,7 +59,7 @@ margin:6px 1%;
 background:#182337;
 color:#fff;
 border:1px solid #334155;
-border-radius:8px;
+border-radius:8px
 }
 
 .config button{
@@ -63,12 +68,12 @@ padding:8px;
 border:0;
 border-radius:8px;
 background:#334155;
-color:#fff;
+color:#fff
 }
 
 .search{
 display:flex;
-gap:5px;
+gap:5px
 }
 
 .search input{
@@ -79,7 +84,7 @@ font-size:16px;
 background:#182337;
 color:#fff;
 border:1px solid #334155;
-border-radius:9px;
+border-radius:9px
 }
 
 .search button{
@@ -89,17 +94,27 @@ border:0;
 border-radius:9px;
 background:#2563eb;
 color:#fff;
-font-weight:bold;
+font-weight:bold
 }
 
-.gps{
+.gps,
+.recalcular{
 width:100%;
-padding:8px;
+padding:9px;
 margin-top:5px;
 border:0;
 border-radius:8px;
-background:#334155;
 color:#fff;
+font-weight:bold
+}
+
+.gps{
+background:#334155
+}
+
+.recalcular{
+background:#16a34a;
+display:none
 }
 
 .card,
@@ -108,7 +123,7 @@ color:#fff;
 background:#111c2e;
 border-radius:11px;
 padding:10px;
-margin-top:6px;
+margin-top:6px
 }
 
 .resultado button,
@@ -120,64 +135,65 @@ border:0;
 border-radius:8px;
 background:#2563eb;
 color:#fff;
-font-weight:bold;
+font-weight:bold
 }
 
 .rota.melhor{
-border:2px solid #4ade80;
+border:2px solid #4ade80
 }
 
 .custo{
 font-size:18px;
 font-weight:bold;
-margin-top:4px;
+margin-top:4px
 }
 
 .verde{
 color:#4ade80;
-font-weight:bold;
+font-weight:bold
 }
 
 .pequeno{
 color:#94a3b8;
 font-size:11px;
-margin-top:3px;
+margin-top:3px
 }
 
 .escondido{
-display:none;
+display:none
 }
 
 .mensagem{
 font-size:12px;
 color:#cbd5e1;
-padding:5px;
+padding:5px
 }
 
 #map{
-height:58vh;
+height:60vh;
 min-height:300px;
 margin-top:6px;
 border-radius:11px;
 overflow:hidden;
-display:none;
+display:none
 }
 
 @media(max-width:430px){
 
 h1{
-font-size:21px;
+font-size:21px
 }
 
 #map{
-height:60vh;
+height:60vh
 }
 
 .search button{
-width:100px;
+width:100px
 }
 
 }
+
 </style>
 </head>
 
@@ -190,6 +206,7 @@ width:100px;
 <div id="status" class="status">
 ● GPS aguardando
 </div>
+
 
 <details class="config">
 
@@ -221,6 +238,7 @@ Salvar
 
 </details>
 
+
 <div class="search">
 
 <input
@@ -236,18 +254,32 @@ Pesquisar
 
 </div>
 
+
 <button class="gps" onclick="ativarGPS()">
 📍 Atualizar GPS
 </button>
+
+
+<button
+id="botaoRecalcular"
+class="recalcular"
+onclick="recalcularRota()"
+>
+⚡ Recalcular rota
+</button>
+
 
 <div
 id="resultados"
 class="card escondido">
 </div>
 
+
 <div id="map"></div>
 
+
 <div id="rotas"></div>
+
 
 <div id="mensagem" class="mensagem">
 Digite um destino para começar.
@@ -255,14 +287,20 @@ Digite um destino para começar.
 
 </div>
 
+
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
 
 <script>
 
 let minhaLocalizacao=null;
+
 let destinoSelecionado=null;
+
 let mapa=null;
+
 let marcadores=[];
+
 let linhasRota=[];
 
 
@@ -270,24 +308,30 @@ let linhasRota=[];
 
 function carregarConfiguracao(){
 
-const p=localStorage.getItem(
+const p=
+localStorage.getItem(
 "precoGasolina"
 );
 
-const c=localStorage.getItem(
+const c=
+localStorage.getItem(
 "consumoMoto"
 );
 
 if(p){
+
 document.getElementById(
 "precoGasolina"
 ).value=p;
+
 }
 
 if(c){
+
 document.getElementById(
 "consumo"
 ).value=c;
+
 }
 
 }
@@ -295,13 +339,15 @@ document.getElementById(
 
 function salvarConfiguracao(){
 
-const p=parseFloat(
+const p=
+parseFloat(
 document.getElementById(
 "precoGasolina"
 ).value
 );
 
-const c=parseFloat(
+const c=
+parseFloat(
 document.getElementById(
 "consumo"
 ).value
@@ -320,6 +366,7 @@ document.getElementById(
 "Informe valores válidos.";
 
 return;
+
 }
 
 localStorage.setItem(
@@ -378,6 +425,7 @@ document.getElementById(
 ).innerText=
 "● GPS ativo";
 
+
 criarMapa();
 
 mapa.setView(
@@ -387,6 +435,16 @@ minhaLocalizacao.lon
 ],
 13
 );
+
+
+if(destinoSelecionado){
+
+document.getElementById(
+"botaoRecalcular"
+).style.display=
+"block";
+
+}
 
 },
 
@@ -532,7 +590,7 @@ break;
 }
 
 
-/* FILTRO AMAPÁ */
+/* FILTRAR AMAPÁ */
 
 const filtrados=
 encontrados.filter(
@@ -551,13 +609,8 @@ item.display_name||
 ).toLowerCase();
 
 return(
-
-estado.includes("amap")
-
-||
-
+estado.includes("amap") ||
 nome.includes("amap")
-
 );
 
 }
@@ -721,16 +774,25 @@ nome:item.display_name
 
 };
 
+
 document.getElementById(
 "destino"
 ).value=
 item.display_name;
+
 
 document.getElementById(
 "resultados"
 ).classList.add(
 "escondido"
 );
+
+
+document.getElementById(
+"botaoRecalcular"
+).style.display=
+"block";
+
 
 if(!minhaLocalizacao){
 
@@ -741,21 +803,87 @@ document.getElementById(
 
 ativarGPS();
 
-setTimeout(
-function(){
-
-if(minhaLocalizacao)
-calcularRotas();
-
-},
-1200
-);
-
 return;
 
 }
 
 calcularRotas();
+
+}
+
+
+/* RECALCULAR ROTA */
+
+function recalcularRota(){
+
+if(!destinoSelecionado){
+
+document.getElementById(
+"mensagem"
+).innerText=
+"Escolha um destino primeiro.";
+
+return;
+
+}
+
+
+document.getElementById(
+"mensagem"
+).innerText=
+"📍 Atualizando sua localização...";
+
+
+if(!navigator.geolocation){
+
+document.getElementById(
+"mensagem"
+).innerText=
+"GPS não disponível.";
+
+return;
+
+}
+
+
+navigator.geolocation.getCurrentPosition(
+
+function(pos){
+
+minhaLocalizacao={
+
+lat:pos.coords.latitude,
+
+lon:pos.coords.longitude
+
+};
+
+document.getElementById(
+"status"
+).innerText=
+"● GPS atualizado";
+
+
+calcularRotas();
+
+},
+
+function(){
+
+document.getElementById(
+"mensagem"
+).innerText=
+"❌ Não foi possível atualizar sua localização.";
+
+},
+
+{
+enableHighAccuracy:true,
+timeout:15000,
+maximumAge:0
+}
+
+);
 
 }
 
@@ -1045,7 +1173,7 @@ minhaLocalizacao.lon
 )
 .addTo(mapa)
 .bindPopup(
-"📍 Sua localização"
+"📍 Sua localização atual"
 ),
 
 L.marker(
@@ -1065,7 +1193,7 @@ destinoSelecionado.lon
 document.getElementById(
 "mensagem"
 ).innerText=
-"Rota pronta.";
+"Rota pronta. Se mudar de posição, use ⚡ Recalcular rota.";
 
 }
 
