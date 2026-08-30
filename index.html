@@ -49,72 +49,25 @@ button {
     font-weight: bold;
 }
 
+button:disabled {
+    opacity: 0.5;
+}
+
 .mapa {
-    height: 380px;
+    height: 260px;
     margin-top: 15px;
     border-radius: 20px;
     background: #172235;
-    position: relative;
-    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
 }
 
-.estrada {
-    position: absolute;
-    height: 14px;
-    background: #39485c;
-    border-radius: 20px;
-    width: 130%;
-}
-
-.e1 {
-    top: 40%;
-    transform: rotate(20deg);
-}
-
-.e2 {
-    top: 65%;
-    transform: rotate(-25deg);
-}
-
-.e3 {
-    top: 50%;
-    transform: rotate(65deg);
-}
-
-.rota {
-    position: absolute;
-    height: 7px;
-    border-radius: 10px;
-}
-
-.atual {
-    background: #3b82f6;
-    width: 65%;
-    top: 55%;
-    left: 10%;
-    transform: rotate(-18deg);
-}
-
-.alternativa {
-    background: #22c55e;
-    width: 60%;
-    top: 63%;
-    left: 10%;
-    transform: rotate(8deg);
-}
-
-.ponto {
-    position: absolute;
-    left: 8%;
-    top: 51%;
-    font-size: 28px;
-}
-
-.destino {
-    position: absolute;
-    right: 8%;
-    top: 25%;
-    font-size: 30px;
+.mapa span {
+    font-size: 18px;
+    color: #94a3b8;
+    padding: 20px;
 }
 
 .card {
@@ -148,93 +101,150 @@ button {
 </button>
 
 <div class="mapa">
-
-<div class="estrada e1"></div>
-<div class="estrada e2"></div>
-<div class="estrada e3"></div>
-
-<div class="rota atual"></div>
-<div class="rota alternativa"></div>
-
-<div class="ponto">🔵</div>
-<div class="destino">📍</div>
-
+<span id="mapaTexto">
+Ative a localização e informe um destino para abrir a rota real.
+</span>
 </div>
 
 <div class="card">
 
-<strong>Rota atual</strong>
+<strong>Rota</strong>
 
-<p>12,4 km • 24 minutos</p>
-
-</div>
-
-<div class="card">
-
-<strong class="verde">
-⚡ Rota alternativa encontrada
-</strong>
-
-<p>
-10,9 km • 20 minutos
+<p id="rotaInfo">
+Aguardando localização e destino.
 </p>
 
-<p class="verde">
-Economiza 1,5 km e 4 minutos
-</p>
-
-<button onclick="usarRota()">
-Usar rota alternativa
+<button id="abrirRota" onclick="abrirGoogleMaps()" disabled>
+🗺️ Abrir rota no Google Maps
 </button>
 
 </div>
 
 <div class="card" id="mensagem">
-As rotas desta primeira versão são demonstrativas.
+As rotas agora usam sua localização atual e o destino informado.
 </div>
 
 </div>
 
 <script>
 
+let latitudeAtual = null;
+let longitudeAtual = null;
+let destinoAtual = "";
+
 function localizar() {
 
     const status = document.getElementById("status");
     const mensagem = document.getElementById("mensagem");
 
-    if (!navigator.geolocation) {
-        status.innerText = "● GPS não disponível";
+    const destino =
+        document.getElementById("destino").value.trim();
+
+    if (!destino) {
+
+        status.innerText = "● Informe o destino";
+
+        mensagem.innerText =
+            "Digite o endereço ou local para onde você quer ir.";
+
+        document.getElementById("destino").focus();
+
         return;
     }
 
-    status.innerText = "● Localizando...";
+    if (!navigator.geolocation) {
+
+        status.innerText =
+            "● GPS não disponível";
+
+        return;
+    }
+
+    destinoAtual = destino;
+
+    status.innerText =
+        "● Localizando...";
+
+    mensagem.innerText =
+        "Obtendo sua localização atual...";
 
     navigator.geolocation.getCurrentPosition(
 
         function(posicao) {
 
-            status.innerText = "● GPS ativo";
+            latitudeAtual =
+                posicao.coords.latitude;
 
-            mensagem.innerText =
-                "Localização recebida. O próximo passo será conectar as rotas reais.";
-
-        },
-
-        function() {
+            longitudeAtual =
+                posicao.coords.longitude;
 
             status.innerText =
-                "● Permissão de localização negada";
+                "● GPS ativo";
 
+            document.getElementById("mapaTexto").innerText =
+                "📍 Localização encontrada. Destino: "
+                + destinoAtual;
+
+            document.getElementById("rotaInfo").innerText =
+                "Origem: sua localização atual • Destino: "
+                + destinoAtual;
+
+            document.getElementById("abrirRota").disabled =
+                false;
+
+            mensagem.innerText =
+                "Localização recebida. Toque em 'Abrir rota no Google Maps' para navegar pela rota real.";
+        },
+
+        function(erro) {
+
+            if (erro.code === 1) {
+
+                status.innerText =
+                    "● Permissão de localização negada";
+
+                mensagem.innerText =
+                    "Permita o acesso à localização do navegador e tente novamente.";
+
+            } else {
+
+                status.innerText =
+                    "● Não foi possível localizar";
+
+                mensagem.innerText =
+                    "Verifique se o GPS do celular está ligado e tente novamente.";
+            }
+        },
+
+        {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0
         }
-
     );
 }
 
-function usarRota() {
+function abrirGoogleMaps() {
 
-    document.getElementById("mensagem").innerText =
-        "Rota alternativa selecionada.";
+    if (
+        latitudeAtual === null ||
+        longitudeAtual === null ||
+        !destinoAtual
+    ) {
+        return;
+    }
 
+    const url =
+        "https://www.google.com/maps/dir/?api=1"
+        + "&origin="
+        + encodeURIComponent(
+            latitudeAtual + "," + longitudeAtual
+        )
+        + "&destination="
+        + encodeURIComponent(destinoAtual)
+        + "&travelmode=driving";
+
+    window.location.href = url;
 }
 
 </script>
