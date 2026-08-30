@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Copiloto de Rotas</title>
+
+<style>
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #0b1220;
+    color: white;
+}
+
+.container {
+    max-width: 600px;
+    margin: auto;
+    padding: 16px;
+}
+
+h1 {
+    margin-bottom: 5px;
+}
+
+.status {
+    color: #4ade80;
+    margin-bottom: 15px;
+}
+
+input, button {
+    width: 100%;
+    padding: 15px;
+    margin-top: 10px;
+    border-radius: 12px;
+    border: none;
+    box-sizing: border-box;
+    font-size: 16px;
+}
+
+input {
+    background: #182337;
+    color: white;
+}
+
+button {
+    background: #2563eb;
+    color: white;
+    font-weight: bold;
+}
+
+.mapa {
+    height: 380px;
+    margin-top: 15px;
+    border-radius: 20px;
+    background: #172235;
+    position: relative;
+    overflow: hidden;
+}
+
+.estrada {
+    position: absolute;
+    height: 14px;
+    background: #39485c;
+    border-radius: 20px;
+    width: 130%;
+}
+
+.e1 {
+    top: 40%;
+    transform: rotate(20deg);
+}
+
+.e2 {
+    top: 65%;
+    transform: rotate(-25deg);
+}
+
+.e3 {
+    top: 50%;
+    transform: rotate(65deg);
+}
+
+.rota {
+    position: absolute;
+    height: 7px;
+    border-radius: 10px;
+}
+
+.atual {
+    background: #3b82f6;
+    width: 65%;
+    top: 55%;
+    left: 10%;
+    transform: rotate(-18deg);
+}
+
+.alternativa {
+    background: #22c55e;
+    width: 60%;
+    top: 63%;
+    left: 10%;
+    transform: rotate(8deg);
+}
+
+.ponto {
+    position: absolute;
+    left: 8%;
+    top: 51%;
+    font-size: 28px;
+}
+
+.destino {
+    position: absolute;
+    right: 8%;
+    top: 25%;
+    font-size: 30px;
+}
+
+.card {
+    background: #182337;
+    padding: 15px;
+    border-radius: 15px;
+    margin-top: 12px;
+}
+
+.verde {
+    color: #4ade80;
+    font-weight: bold;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>🛵 Copiloto de Rotas</h1>
+
+<div class="status" id="status">
+● GPS aguardando
+</div>
+
+<input id="destino" placeholder="Digite seu destino">
+
+<button onclick="localizar()">
+📍 Ativar localização
+</button>
+
+<div class="mapa">
+
+<div class="estrada e1"></div>
+<div class="estrada e2"></div>
+<div class="estrada e3"></div>
+
+<div class="rota atual"></div>
+<div class="rota alternativa"></div>
+
+<div class="ponto">🔵</div>
+<div class="destino">📍</div>
+
+</div>
+
+<div class="card">
+
+<strong>Rota atual</strong>
+
+<p>12,4 km • 24 minutos</p>
+
+</div>
+
+<div class="card">
+
+<strong class="verde">
+⚡ Rota alternativa encontrada
+</strong>
+
+<p>
+10,9 km • 20 minutos
+</p>
+
+<p class="verde">
+Economiza 1,5 km e 4 minutos
+</p>
+
+<button onclick="usarRota()">
+Usar rota alternativa
+</button>
+
+</div>
+
+<div class="card" id="mensagem">
+As rotas desta primeira versão são demonstrativas.
+</div>
+
+</div>
+
+<script>
+
+function localizar() {
+
+    const status = document.getElementById("status");
+    const mensagem = document.getElementById("mensagem");
+
+    if (!navigator.geolocation) {
+        status.innerText = "● GPS não disponível";
+        return;
+    }
+
+    status.innerText = "● Localizando...";
+
+    navigator.geolocation.getCurrentPosition(
+
+        function(posicao) {
+
+            status.innerText = "● GPS ativo";
+
+            mensagem.innerText =
+                "Localização recebida. O próximo passo será conectar as rotas reais.";
+
+        },
+
+        function() {
+
+            status.innerText =
+                "● Permissão de localização negada";
+
+        }
+
+    );
+}
+
+function usarRota() {
+
+    document.getElementById("mensagem").innerText =
+        "Rota alternativa selecionada.";
+
+}
+
+</script>
+
+</body>
+</html>
