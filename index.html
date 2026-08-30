@@ -143,8 +143,8 @@ let destinosEncontrados = [];
 let linhas = [];
 
 const map = L.map("map").setView(
-    [-14.235, -51.925],
-    4
+    [-0.035, -51.070],
+    10
 );
 
 L.tileLayer(
@@ -164,9 +164,7 @@ function distanciaKm(
 ){
 
     const R = 6371;
-
-    const rad =
-        Math.PI / 180;
+    const rad = Math.PI / 180;
 
     const dLat =
         (lat2 - lat1) * rad;
@@ -192,9 +190,7 @@ function pegarLocalizacao(){
     return new Promise(
         (resolve,reject)=>{
 
-            if(
-                !navigator.geolocation
-            ){
+            if(!navigator.geolocation){
 
                 reject(
                     "GPS não disponível."
@@ -208,9 +204,7 @@ function pegarLocalizacao(){
             .innerText =
                 "● Obtendo localização...";
 
-
-            navigator.geolocation
-            .getCurrentPosition(
+            navigator.geolocation.getCurrentPosition(
 
                 function(pos){
 
@@ -230,7 +224,7 @@ function pegarLocalizacao(){
                             latitude,
                             longitude
                         ],
-                        14
+                        12
                     );
 
                     resolve();
@@ -256,9 +250,7 @@ function pegarLocalizacao(){
 }
 
 
-async function procurarDestinos(
-    nome
-){
+async function procurarDestinos(nome){
 
     const parametros =
         new URLSearchParams({
@@ -271,7 +263,12 @@ async function procurarDestinos(
 
             addressdetails:"1",
 
-            q:nome
+            q:nome + ", Amapá, Brasil",
+
+            viewbox:
+                "-54.9,4.3,-49.8,-1.3",
+
+            bounded:"1"
 
         });
 
@@ -300,7 +297,7 @@ async function procurarDestinos(
     if(!dados.length){
 
         throw new Error(
-            "Nenhum destino encontrado."
+            "Nenhum destino encontrado no Amapá."
         );
     }
 
@@ -323,13 +320,9 @@ async function procurarDestinos(
 
     .filter(function(item){
 
-        return Number.isFinite(
-            item.lat
-        )
+        return Number.isFinite(item.lat)
         &&
-        Number.isFinite(
-            item.lon
-        );
+        Number.isFinite(item.lon);
 
     })
 
@@ -364,7 +357,7 @@ function mostrarOpcoes(){
 
     caixa.innerHTML =
         '<div class="card">' +
-        '<strong>📍 Destinos próximos</strong>' +
+        '<strong>📍 Destinos no Amapá</strong>' +
         '<div class="pequeno">' +
         'Escolha o local correto:' +
         '</div>' +
@@ -463,7 +456,7 @@ async function calcularRotas(){
 
 
         resultado.innerText =
-            "Procurando destinos próximos...";
+            "Procurando no Amapá...";
 
 
         destinosEncontrados =
@@ -631,183 +624,4 @@ function mostrarRotas(){
                     1000
                 )
                 .toFixed(1)
-                .replace(".",",");
-
-
-            const tempo =
-                Math.round(
-                    rota.duration /
-                    60
-                );
-
-
-            const div =
-                document.createElement(
-                    "div"
-                );
-
-
-            div.className =
-                "rota " +
-                (
-                    index === 0
-                    ? "melhor"
-                    : ""
-                );
-
-
-            div.innerHTML =
-
-                "<strong>" +
-
-                (
-                    index === 0
-                    ? "🟢 Melhor opção"
-                    : "🔵 Rota alternativa"
-                ) +
-
-                "</strong>" +
-
-                "<p>" +
-
-                distancia +
-                " km • " +
-                tempo +
-                " min" +
-
-                "</p>" +
-
-                (
-                    index === 0
-                    ? "<p class='verde'>" +
-                      "Mais rápida entre as opções." +
-                      "</p>"
-                    : ""
-                ) +
-
-                "<button onclick='abrirMaps()'>" +
-                "🗺️ Navegar pelo Google Maps" +
-                "</button>";
-
-
-            resultado.appendChild(
-                div
-            );
-
-
-            desenharRota(
-                rota,
-                index
-            );
-
-        }
-    );
-}
-
-
-function desenharRota(
-    rota,
-    index
-){
-
-    const pontos =
-        rota.geometry.coordinates
-        .map(
-            function(ponto){
-
-                return [
-                    ponto[1],
-                    ponto[0]
-                ];
-
-            }
-        );
-
-
-    const linha =
-        L.polyline(
-            pontos,
-            {
-
-                color:
-                    index === 0
-                    ? "#22c55e"
-                    : "#3b82f6",
-
-                weight:
-                    index === 0
-                    ? 7
-                    : 4,
-
-                opacity:
-                    index === 0
-                    ? 1
-                    : .5
-
-            }
-        )
-        .addTo(map);
-
-
-    linhas.push(
-        linha
-    );
-
-
-    if(index === 0){
-
-        map.fitBounds(
-            linha.getBounds(),
-            {
-                padding:[
-                    20,
-                    20
-                ]
-            }
-        );
-
-    }
-}
-
-
-function abrirMaps(){
-
-    if(
-        latitude === null ||
-        longitude === null ||
-        !destino
-    ){
-
-        return;
-
-    }
-
-
-    const url =
-        "https://www.google.com/maps/dir/?api=1" +
-
-        "&origin=" +
-
-        encodeURIComponent(
-            latitude +
-            "," +
-            longitude
-        ) +
-
-        "&destination=" +
-
-        encodeURIComponent(
-            destino.nome
-        ) +
-
-        "&travelmode=driving";
-
-
-    window.location.href =
-        url;
-}
-
-</script>
-
-</body>
-</html>
+                .replace
