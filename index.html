@@ -5,90 +5,100 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Copiloto de Rotas</title>
 
-<link rel="stylesheet"
-href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 
 <style>
-body {
-    margin: 0;
-    font-family: Arial, sans-serif;
-    background: #0b1220;
-    color: white;
+body{
+    margin:0;
+    font-family:Arial,sans-serif;
+    background:#0b1220;
+    color:white
 }
 
-.container {
-    max-width: 700px;
-    margin: auto;
-    padding: 16px;
+.container{
+    max-width:700px;
+    margin:auto;
+    padding:16px
 }
 
-h1 {
-    margin-bottom: 5px;
+h1{
+    margin-bottom:5px
 }
 
-.status {
-    color: #4ade80;
-    margin-bottom: 15px;
+.status{
+    color:#4ade80;
+    margin-bottom:15px
 }
 
-input, button {
-    width: 100%;
-    padding: 15px;
-    margin-top: 10px;
-    border-radius: 12px;
-    border: none;
-    box-sizing: border-box;
-    font-size: 16px;
+input,button{
+    width:100%;
+    padding:15px;
+    margin-top:10px;
+    border-radius:12px;
+    border:none;
+    box-sizing:border-box;
+    font-size:16px
 }
 
-input {
-    background: #182337;
-    color: white;
+input{
+    background:#182337;
+    color:white
 }
 
-button {
-    background: #2563eb;
-    color: white;
-    font-weight: bold;
+button{
+    background:#2563eb;
+    color:white;
+    font-weight:bold
 }
 
-button:disabled {
-    opacity: .5;
+button:disabled{
+    opacity:.5
 }
 
-#map {
-    height: 330px;
-    margin-top: 15px;
-    border-radius: 20px;
-    overflow: hidden;
+#map{
+    height:330px;
+    margin-top:15px;
+    border-radius:20px;
+    overflow:hidden
 }
 
-.card {
-    background: #182337;
-    padding: 15px;
-    border-radius: 15px;
-    margin-top: 12px;
+.card{
+    background:#182337;
+    padding:15px;
+    border-radius:15px;
+    margin-top:12px
 }
 
-.rota {
-    background: #111a2b;
-    padding: 12px;
-    border-radius: 12px;
-    margin-top: 10px;
+.opcao{
+    background:#111a2b;
+    padding:12px;
+    border-radius:12px;
+    margin-top:10px
 }
 
-.rota.melhor {
-    border: 2px solid #4ade80;
+.rota{
+    background:#111a2b;
+    padding:12px;
+    border-radius:12px;
+    margin-top:10px
 }
 
-.verde {
-    color: #4ade80;
-    font-weight: bold;
+.rota.melhor{
+    border:2px solid #4ade80
 }
 
-.pequeno {
-    color: #94a3b8;
-    font-size: 14px;
+.verde{
+    color:#4ade80;
+    font-weight:bold
+}
+
+.pequeno{
+    color:#94a3b8;
+    font-size:14px
+}
+
+.erro{
+    color:#f87171
 }
 </style>
 </head>
@@ -105,11 +115,13 @@ button:disabled {
 
 <input
 id="destino"
-placeholder="Digite seu destino">
+placeholder="Digite o destino">
 
 <button onclick="calcularRotas()">
-📍 Calcular melhores rotas
+📍 Procurar destino
 </button>
+
+<div id="opcoes"></div>
 
 <div id="map"></div>
 
@@ -119,8 +131,7 @@ Digite um destino para começar.
 
 </div>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
-</script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
 
@@ -128,8 +139,10 @@ let latitude = null;
 let longitude = null;
 let destino = null;
 let rotas = [];
+let destinosEncontrados = [];
+let linhas = [];
 
-let map = L.map("map").setView(
+const map = L.map("map").setView(
     [-14.235, -51.925],
     4
 );
@@ -137,105 +150,301 @@ let map = L.map("map").setView(
 L.tileLayer(
     "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
     {
-        maxZoom: 19,
-        attribution: "© OpenStreetMap"
+        maxZoom:19,
+        attribution:"© OpenStreetMap"
     }
 ).addTo(map);
 
 
-async function pegarLocalizacao() {
+function distanciaKm(
+    lat1,
+    lon1,
+    lat2,
+    lon2
+){
 
-    return new Promise((resolve, reject) => {
+    const R = 6371;
 
-        if (!navigator.geolocation) {
-            reject("GPS não disponível");
-            return;
-        }
+    const rad =
+        Math.PI / 180;
 
-        document.getElementById("status").innerText =
-            "● Obtendo localização...";
+    const dLat =
+        (lat2 - lat1) * rad;
 
-        navigator.geolocation.getCurrentPosition(
+    const dLon =
+        (lon2 - lon1) * rad;
 
-            function(posicao) {
+    const a =
+        Math.sin(dLat / 2) ** 2 +
+        Math.cos(lat1 * rad) *
+        Math.cos(lat2 * rad) *
+        Math.sin(dLon / 2) ** 2;
 
-                latitude =
-                    posicao.coords.latitude;
-
-                longitude =
-                    posicao.coords.longitude;
-
-                document.getElementById("status").innerText =
-                    "● GPS ativo";
-
-                resolve();
-
-            },
-
-            function() {
-
-                reject(
-                    "Não foi possível acessar sua localização."
-                );
-
-            },
-
-            {
-                enableHighAccuracy: true,
-                timeout: 15000,
-                maximumAge: 0
-            }
+    return 2 * R *
+        Math.asin(
+            Math.sqrt(a)
         );
-    });
 }
 
 
-async function procurarDestino(nome) {
+function pegarLocalizacao(){
+
+    return new Promise(
+        (resolve,reject)=>{
+
+            if(
+                !navigator.geolocation
+            ){
+
+                reject(
+                    "GPS não disponível."
+                );
+
+                return;
+            }
+
+            document
+            .getElementById("status")
+            .innerText =
+                "● Obtendo localização...";
+
+
+            navigator.geolocation
+            .getCurrentPosition(
+
+                function(pos){
+
+                    latitude =
+                        pos.coords.latitude;
+
+                    longitude =
+                        pos.coords.longitude;
+
+                    document
+                    .getElementById("status")
+                    .innerText =
+                        "● GPS ativo";
+
+                    map.setView(
+                        [
+                            latitude,
+                            longitude
+                        ],
+                        14
+                    );
+
+                    resolve();
+
+                },
+
+                function(){
+
+                    reject(
+                        "Não foi possível acessar sua localização."
+                    );
+
+                },
+
+                {
+                    enableHighAccuracy:true,
+                    timeout:15000,
+                    maximumAge:0
+                }
+            );
+        }
+    );
+}
+
+
+async function procurarDestinos(
+    nome
+){
+
+    const parametros =
+        new URLSearchParams({
+
+            format:"json",
+
+            limit:"10",
+
+            countrycodes:"br",
+
+            addressdetails:"1",
+
+            q:nome
+
+        });
+
 
     const url =
-        "https://nominatim.openstreetmap.org/search" +
-        "?format=json" +
-        "&limit=1" +
-        "&countrycodes=br" +
-        "&q=" +
-        encodeURIComponent(nome);
+        "https://nominatim.openstreetmap.org/search?"
+        + parametros.toString();
+
 
     const resposta =
         await fetch(url);
 
-    const dados =
-        await resposta.json();
 
-    if (!dados.length) {
+    if(!resposta.ok){
+
         throw new Error(
-            "Destino não encontrado."
+            "Erro ao procurar destinos."
         );
     }
 
-    return {
 
-        lat: Number(dados[0].lat),
+    const dados =
+        await resposta.json();
 
-        lon: Number(dados[0].lon),
 
-        nome: dados[0].display_name
+    if(!dados.length){
 
-    };
+        throw new Error(
+            "Nenhum destino encontrado."
+        );
+    }
+
+
+    return dados
+
+    .map(function(item){
+
+        return {
+
+            lat:Number(item.lat),
+
+            lon:Number(item.lon),
+
+            nome:item.display_name
+
+        };
+
+    })
+
+    .filter(function(item){
+
+        return Number.isFinite(
+            item.lat
+        )
+        &&
+        Number.isFinite(
+            item.lon
+        );
+
+    })
+
+    .sort(function(a,b){
+
+        return distanciaKm(
+            latitude,
+            longitude,
+            a.lat,
+            a.lon
+        )
+        -
+        distanciaKm(
+            latitude,
+            longitude,
+            b.lat,
+            b.lon
+        );
+
+    });
+
 }
 
 
-async function calcularRotas() {
+function mostrarOpcoes(){
 
-    const nomeDestino =
+    const caixa =
+        document.getElementById(
+            "opcoes"
+        );
+
+
+    caixa.innerHTML =
+        '<div class="card">' +
+        '<strong>📍 Destinos próximos</strong>' +
+        '<div class="pequeno">' +
+        'Escolha o local correto:' +
+        '</div>' +
+        '</div>';
+
+
+    destinosEncontrados
+    .slice(0,5)
+    .forEach(
+        function(destinoItem,index){
+
+            const distancia =
+                distanciaKm(
+                    latitude,
+                    longitude,
+                    destinoItem.lat,
+                    destinoItem.lon
+                )
+                .toFixed(1)
+                .replace(".",",");
+
+
+            const div =
+                document.createElement(
+                    "div"
+                );
+
+
+            div.className =
+                "opcao";
+
+
+            div.innerHTML =
+
+                "<strong>" +
+                (index + 1) +
+                ". " +
+                destinoItem.nome +
+                "</strong>" +
+
+                "<div class='pequeno'>" +
+                distancia +
+                " km da sua localização" +
+                "</div>" +
+
+                "<button onclick='usarDestino(" +
+                index +
+                ")'>" +
+                "Usar este destino" +
+                "</button>";
+
+
+            caixa.appendChild(div);
+
+        }
+    );
+}
+
+
+async function calcularRotas(){
+
+    const nome =
         document
         .getElementById("destino")
         .value
         .trim();
 
-    const resultado =
-        document.getElementById("resultado");
 
-    if (!nomeDestino) {
+    const resultado =
+        document.getElementById(
+            "resultado"
+        );
+
+
+    document.getElementById(
+        "opcoes"
+    ).innerHTML = "";
+
+
+    if(!nome){
 
         resultado.innerText =
             "Digite um destino primeiro.";
@@ -243,26 +452,79 @@ async function calcularRotas() {
         return;
     }
 
-    try {
+
+    try{
 
         resultado.innerText =
-            "Obtendo sua localização...";
+            "Obtendo localização...";
+
 
         await pegarLocalizacao();
 
 
         resultado.innerText =
-            "Procurando destino...";
+            "Procurando destinos próximos...";
 
-        destino =
-            await procurarDestino(
-                nomeDestino
+
+        destinosEncontrados =
+            await procurarDestinos(
+                nome
             );
 
 
-        resultado.innerText =
-            "Calculando melhores rotas...";
+        if(
+            destinosEncontrados.length === 1
+        ){
 
+            usarDestino(0);
+
+            return;
+        }
+
+
+        mostrarOpcoes();
+
+
+        resultado.innerText =
+            "Escolha o destino correto acima.";
+
+    }
+    catch(erro){
+
+        resultado.innerHTML =
+            "<span class='erro'>" +
+            (
+                erro.message ||
+                erro
+            ) +
+            "</span>";
+
+    }
+}
+
+
+async function usarDestino(index){
+
+    destino =
+        destinosEncontrados[index];
+
+
+    document.getElementById(
+        "opcoes"
+    ).innerHTML = "";
+
+
+    const resultado =
+        document.getElementById(
+            "resultado"
+        );
+
+
+    resultado.innerText =
+        "Calculando melhores rotas...";
+
+
+    try{
 
         const coordenadas =
             longitude +
@@ -290,15 +552,15 @@ async function calcularRotas() {
             await resposta.json();
 
 
-        if (
+        if(
             dados.code !== "Ok" ||
+            !dados.routes ||
             !dados.routes.length
-        ) {
+        ){
 
             throw new Error(
                 "Não encontrei uma rota."
             );
-
         }
 
 
@@ -308,37 +570,74 @@ async function calcularRotas() {
 
         mostrarRotas();
 
+    }
+    catch(erro){
 
-    } catch (erro) {
-
-        resultado.innerText =
-            erro.message || erro;
+        resultado.innerHTML =
+            "<span class='erro'>" +
+            (
+                erro.message ||
+                erro
+            ) +
+            "</span>";
 
     }
 }
 
 
-function mostrarRotas() {
+function limparLinhas(){
 
-    document
-        .getElementById("resultado")
-        .innerHTML = "";
+    linhas.forEach(
+        function(linha){
+
+            map.removeLayer(
+                linha
+            );
+
+        }
+    );
+
+    linhas = [];
+}
+
+
+function mostrarRotas(){
+
+    limparLinhas();
+
+
+    const resultado =
+        document.getElementById(
+            "resultado"
+        );
+
+
+    resultado.innerHTML =
+        "<div class='pequeno'>" +
+        "Destino selecionado:" +
+        "</div>" +
+
+        "<strong>" +
+        destino.nome +
+        "</strong>";
 
 
     rotas.forEach(
-        (rota, indice) => {
+        function(rota,index){
 
             const distancia =
                 (
-                    rota.distance / 1000
+                    rota.distance /
+                    1000
                 )
                 .toFixed(1)
-                .replace(".", ",");
+                .replace(".",",");
 
 
             const tempo =
                 Math.round(
-                    rota.duration / 60
+                    rota.duration /
+                    60
                 );
 
 
@@ -350,9 +649,11 @@ function mostrarRotas() {
 
             div.className =
                 "rota " +
-                (indice === 0
+                (
+                    index === 0
                     ? "melhor"
-                    : "");
+                    : ""
+                );
 
 
             div.innerHTML =
@@ -360,7 +661,7 @@ function mostrarRotas() {
                 "<strong>" +
 
                 (
-                    indice === 0
+                    index === 0
                     ? "🟢 Melhor opção"
                     : "🔵 Rota alternativa"
                 ) +
@@ -377,53 +678,49 @@ function mostrarRotas() {
                 "</p>" +
 
                 (
-                    indice === 0
-                    ? "<p class='verde'>Mais rápida entre as opções encontradas.</p>"
+                    index === 0
+                    ? "<p class='verde'>" +
+                      "Mais rápida entre as opções." +
+                      "</p>"
                     : ""
                 ) +
 
                 "<button onclick='abrirMaps()'>" +
-
                 "🗺️ Navegar pelo Google Maps" +
-
                 "</button>";
 
 
-            document
-                .getElementById("resultado")
-                .appendChild(div);
+            resultado.appendChild(
+                div
+            );
 
 
             desenharRota(
                 rota,
-                indice
+                index
             );
 
         }
-    );
-
-
-    map.setView(
-        [
-            latitude,
-            longitude
-        ],
-        14
     );
 }
 
 
 function desenharRota(
     rota,
-    indice
-) {
+    index
+){
 
     const pontos =
-        rota.geometry.coordinates.map(
-            ponto => [
-                ponto[1],
-                ponto[0]
-            ]
+        rota.geometry.coordinates
+        .map(
+            function(ponto){
+
+                return [
+                    ponto[1],
+                    ponto[0]
+                ];
+
+            }
         );
 
 
@@ -431,31 +728,38 @@ function desenharRota(
         L.polyline(
             pontos,
             {
+
                 color:
-                    indice === 0
+                    index === 0
                     ? "#22c55e"
                     : "#3b82f6",
 
                 weight:
-                    indice === 0
+                    index === 0
                     ? 7
                     : 4,
 
                 opacity:
-                    indice === 0
+                    index === 0
                     ? 1
                     : .5
+
             }
         )
         .addTo(map);
 
 
-    if (indice === 0) {
+    linhas.push(
+        linha
+    );
+
+
+    if(index === 0){
 
         map.fitBounds(
             linha.getBounds(),
             {
-                padding: [
+                padding:[
                     20,
                     20
                 ]
@@ -466,13 +770,13 @@ function desenharRota(
 }
 
 
-function abrirMaps() {
+function abrirMaps(){
 
-    if (
+    if(
         latitude === null ||
         longitude === null ||
         !destino
-    ) {
+    ){
 
         return;
 
